@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>GeoReferenced Image Splitter Documentation</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">GeoReferenced Image Splitter Documentation</h1>
+</header>
+<h1
+id="georeferenced-image-splitter-2kmz-overlay-documentation">GeoReferenced
+Image Splitter 2KMZ Overlay Documentation</h1>
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol type="1">
+<li><a href="#overview">Overview</a></li>
+<li><a href="#features">Features</a></li>
+<li><a href="#components">Components</a></li>
+<li><a href="#dependencies">Dependencies</a></li>
+<li><a href="#processing-pipeline">Processing Pipeline</a></li>
+<li><a href="#user-interface-guide">User Interface Guide</a></li>
+<li><a href="#output-formats">Output Formats</a></li>
+<li><a href="#best-practices">Best Practices</a></li>
+<li><a href="#technical-details">Technical Details</a></li>
+<li><a href="#application-architecture-and-diagrams">Application
+Architecture and Diagrams</a></li>
+</ol>
+<h2 id="overview">Overview</h2>
+<p>GeoReferenced Image Splitter 2KMZ Overlay is a specialized Java
+application designed for processing and splitting large georeferenced
+images (GeoTIFF) into manageable tiles while preserving geographic
+coordinates. The application provides options to output tiles in
+different formats and create KMZ overlays for visualization in Google
+Earth and other GIS applications.</p>
+<h2 id="features">Features</h2>
+<h3 id="core-features">Core Features</h3>
+<ul>
+<li><strong>Image Splitting</strong>: Split large GeoTIFF files into
+smaller, manageable tiles</li>
+<li><strong>Coordinate Preservation</strong>: Maintain geographic
+coordinates and projections</li>
+<li><strong>Multiple Output Formats</strong>: Generate tiles in GeoTIFF
+or PNG format with transparency support</li>
+<li><strong>KMZ Generation</strong>: Create Google Earth compatible KMZ
+overlays</li>
+<li><strong>Opacity Control</strong>: Adjust tile transparency
+(0-100%)</li>
+<li><strong>Flexible Tiling</strong>: Customize the number of tiles in X
+and Y directions</li>
+<li><strong>CRS Support</strong>: Multiple coordinate reference systems
+supported</li>
+<li><strong>Modern UI</strong>: User-friendly JavaFX interface (600x600
+pixels)</li>
+</ul>
+<h3 id="recent-enhancements">Recent Enhancements</h3>
+<ul>
+<li><strong>PNG Output Support</strong>: Full implementation of PNG tile
+generation with transparency</li>
+<li><strong>Improved UI Layout</strong>: Optimized 600x600 pixel window
+with non-resizable design</li>
+<li><strong>Enhanced Header</strong>: Relocated Help and About buttons
+to application header</li>
+<li><strong>Better Status Messages</strong>: More detailed processing
+feedback and file locations</li>
+<li><strong>Improved Error Handling</strong>: Better error messages and
+exception handling</li>
+<li><strong>Documentation Updates</strong>: Comprehensive technical
+documentation with diagrams</li>
+</ul>
+<h2 id="components">Components</h2>
+<h3 id="user-interface-splitterui.java">1. User Interface
+(<code>SplitterUI.java</code>)</h3>
+<ul>
+<li><strong>Main Window</strong>: Fixed 600x600 pixel window with
+organized sections</li>
+<li><strong>Header Section</strong>: Title and navigation buttons (Help,
+About)</li>
+<li><strong>File Selection</strong>: GeoTIFF file chooser with extension
+filtering</li>
+<li><strong>Settings Panel</strong>: Comprehensive configuration
+options</li>
+<li><strong>Status Display</strong>: Detailed processing feedback</li>
+<li><strong>Help &amp; About</strong>: Documentation and developer
+information</li>
+</ul>
+<h3 id="geotiff-processor-geotiffprocessor.java">2. GeoTIFF Processor
+(<code>GeoTiffProcessor.java</code>)</h3>
+<ul>
+<li><strong>File Processing</strong>: Handles reading and processing of
+GeoTIFF files</li>
+<li><strong>Coordinate Management</strong>: Manages coordinate
+transformations and CRS</li>
+<li><strong>Tile Generation</strong>: Implements tile generation with
+format selection</li>
+<li><strong>Format Support</strong>:
+<ul>
+<li>GeoTIFF output with preserved georeferencing</li>
+<li>PNG output with transparency support</li>
+<li>KMZ overlay generation</li>
+</ul></li>
+<li><strong>Quality Settings</strong>: High-quality image processing
+with antialiasing</li>
+</ul>
+<h2 id="dependencies">Dependencies</h2>
+<h3 id="core-libraries">Core Libraries</h3>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode xml"><code class="sourceCode xml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>&lt;<span class="kw">dependencies</span>&gt;</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!-- JavaFX - UI Framework --&gt;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">dependency</span>&gt;</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">groupId</span>&gt;org.openjfx&lt;/<span class="kw">groupId</span>&gt;</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">artifactId</span>&gt;javafx-controls&lt;/<span class="kw">artifactId</span>&gt;</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">version</span>&gt;17.0.1&lt;/<span class="kw">version</span>&gt;</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">dependency</span>&gt;</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">&lt;!-- GeoTools - Geospatial Data Handling --&gt;</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">dependency</span>&gt;</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">groupId</span>&gt;org.geotools&lt;/<span class="kw">groupId</span>&gt;</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">artifactId</span>&gt;gt-main&lt;/<span class="kw">artifactId</span>&gt;</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">version</span>&gt;27.0&lt;/<span class="kw">version</span>&gt;</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">dependency</span>&gt;</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>    &lt;<span class="kw">dependency</span>&gt;</span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">groupId</span>&gt;org.geotools&lt;/<span class="kw">groupId</span>&gt;</span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">artifactId</span>&gt;gt-geotiff&lt;/<span class="kw">artifactId</span>&gt;</span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>        &lt;<span class="kw">version</span>&gt;27.0&lt;/<span class="kw">version</span>&gt;</span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>    &lt;/<span class="kw">dependency</span>&gt;</span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>&lt;/<span class="kw">dependencies</span>&gt;</span></code></pre></div>
+<h2 id="processing-pipeline">Processing Pipeline</h2>
+<h3 id="file-loading-and-validation">1. File Loading and Validation</h3>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="dt">void</span> <span class="fu">process</span><span class="op">()</span> <span class="kw">throws</span> <span class="bu">IOException</span> <span class="op">{</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Initialize EPSG database</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">System</span><span class="op">.</span><span class="fu">setProperty</span><span class="op">(</span><span class="st">&quot;org.geotools.referencing.forceXY&quot;</span><span class="op">,</span> <span class="st">&quot;true&quot;</span><span class="op">);</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Reset CRS factory and create reader</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    CRS<span class="op">.</span><span class="fu">reset</span><span class="op">(</span><span class="st">&quot;all&quot;</span><span class="op">);</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    GeoTiffReader reader <span class="op">=</span> <span class="kw">new</span> <span class="fu">GeoTiffReader</span><span class="op">(</span>geoTiffFile<span class="op">);</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Extract essential information</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    coverage <span class="op">=</span> reader<span class="op">.</span><span class="fu">read</span><span class="op">(</span><span class="kw">null</span><span class="op">);</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    bounds <span class="op">=</span> coverage<span class="op">.</span><span class="fu">getEnvelope2D</span><span class="op">();</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    sourceCRS <span class="op">=</span> coverage<span class="op">.</span><span class="fu">getCoordinateReferenceSystem</span><span class="op">();</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="tile-generation-process">2. Tile Generation Process</h3>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">public</span> <span class="bu">List</span><span class="op">&lt;</span>TileInfo<span class="op">&gt;</span> <span class="fu">splitIntoTiles</span><span class="op">(</span><span class="dt">int</span> numTilesX<span class="op">,</span> <span class="dt">int</span> numTilesY<span class="op">,</span> <span class="bu">File</span> outputDir<span class="op">,</span> <span class="bu">String</span> outputFormat<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Calculate dimensions</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> tileWidth <span class="op">=</span> <span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">ceil</span><span class="op">((</span><span class="dt">double</span><span class="op">)</span> fullWidth <span class="op">/</span> numTilesX<span class="op">);</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    <span class="dt">int</span> tileHeight <span class="op">=</span> <span class="op">(</span><span class="dt">int</span><span class="op">)</span> <span class="bu">Math</span><span class="op">.</span><span class="fu">ceil</span><span class="op">((</span><span class="dt">double</span><span class="op">)</span> fullHeight <span class="op">/</span> numTilesY<span class="op">);</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Process each tile</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> y <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> y <span class="op">&lt;</span> numTilesY<span class="op">;</span> y<span class="op">++)</span> <span class="op">{</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> <span class="op">(</span><span class="dt">int</span> x <span class="op">=</span> <span class="dv">0</span><span class="op">;</span> x <span class="op">&lt;</span> numTilesX<span class="op">;</span> x<span class="op">++)</span> <span class="op">{</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Create and process tile</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>            <span class="bu">BufferedImage</span> tileImage <span class="op">=</span> <span class="fu">createTile</span><span class="op">(</span>x<span class="op">,</span> y<span class="op">);</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>            tileImage <span class="op">=</span> <span class="fu">applyOpacity</span><span class="op">(</span>tileImage<span class="op">);</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>            <span class="co">// Save in selected format</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> <span class="op">(</span>outputFormat<span class="op">.</span><span class="fu">equalsIgnoreCase</span><span class="op">(</span><span class="st">&quot;PNG&quot;</span><span class="op">))</span> <span class="op">{</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>                <span class="fu">saveTileAsPNG</span><span class="op">(</span>tile<span class="op">,</span> tileFile<span class="op">);</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span> <span class="cf">else</span> <span class="op">{</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>                <span class="fu">saveTileAsGeoTIFF</span><span class="op">(</span>tile<span class="op">,</span> tileFile<span class="op">);</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>            <span class="op">}</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>        <span class="op">}</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h3 id="format-specific-processing">3. Format-Specific Processing</h3>
+<h4 id="geotiff-output">GeoTIFF Output</h4>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="dt">void</span> <span class="fu">saveTileAsGeoTIFF</span><span class="op">(</span>TileInfo tile<span class="op">,</span> <span class="bu">File</span> outputFile<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Create grid coverage with georeferencing</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    GridCoverage2D tileCoverage <span class="op">=</span> <span class="fu">createGridCoverage</span><span class="op">(</span>tile<span class="op">);</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Write GeoTIFF with preserved coordinates</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    GeoTiffWriter writer <span class="op">=</span> <span class="kw">new</span> <span class="fu">GeoTiffWriter</span><span class="op">(</span>outputFile<span class="op">);</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>    writer<span class="op">.</span><span class="fu">write</span><span class="op">(</span>tileCoverage<span class="op">,</span> <span class="kw">null</span><span class="op">);</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h4 id="png-output">PNG Output</h4>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode java"><code class="sourceCode java"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">private</span> <span class="dt">void</span> <span class="fu">saveTileAsPNG</span><span class="op">(</span>TileInfo tile<span class="op">,</span> <span class="bu">File</span> outputFile<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Create high-quality PNG with alpha support</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="bu">BufferedImage</span> pngImage <span class="op">=</span> <span class="kw">new</span> <span class="bu">BufferedImage</span><span class="op">(</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>        tile<span class="op">.</span><span class="fu">getImage</span><span class="op">().</span><span class="fu">getWidth</span><span class="op">(),</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>        tile<span class="op">.</span><span class="fu">getImage</span><span class="op">().</span><span class="fu">getHeight</span><span class="op">(),</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>        <span class="bu">BufferedImage</span><span class="op">.</span><span class="fu">TYPE_INT_ARGB</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    <span class="op">);</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Apply high-quality rendering settings</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    <span class="bu">Graphics2D</span> g <span class="op">=</span> pngImage<span class="op">.</span><span class="fu">createGraphics</span><span class="op">();</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    g<span class="op">.</span><span class="fu">setRenderingHint</span><span class="op">(</span><span class="bu">RenderingHints</span><span class="op">.</span><span class="fu">KEY_INTERPOLATION</span><span class="op">,</span> </span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>                       <span class="bu">RenderingHints</span><span class="op">.</span><span class="fu">VALUE_INTERPOLATION_BILINEAR</span><span class="op">);</span></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    g<span class="op">.</span><span class="fu">setRenderingHint</span><span class="op">(</span><span class="bu">RenderingHints</span><span class="op">.</span><span class="fu">KEY_RENDERING</span><span class="op">,</span> </span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>                       <span class="bu">RenderingHints</span><span class="op">.</span><span class="fu">VALUE_RENDER_QUALITY</span><span class="op">);</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>    g<span class="op">.</span><span class="fu">setRenderingHint</span><span class="op">(</span><span class="bu">RenderingHints</span><span class="op">.</span><span class="fu">KEY_ANTIALIASING</span><span class="op">,</span> </span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>                       <span class="bu">RenderingHints</span><span class="op">.</span><span class="fu">VALUE_ANTIALIAS_ON</span><span class="op">);</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>    <span class="co">// Save PNG with transparency</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">ImageIO</span><span class="op">.</span><span class="fu">write</span><span class="op">(</span>pngImage<span class="op">,</span> <span class="st">&quot;PNG&quot;</span><span class="op">,</span> outputFile<span class="op">);</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<h2 id="output-formats">Output Formats</h2>
+<h3 id="geotiff-tiles">1. GeoTIFF Tiles</h3>
+<ul>
+<li>Maintains coordinate reference system</li>
+<li>Preserves geographic metadata</li>
+<li>Suitable for GIS applications</li>
+<li>Full quality preservation</li>
+<li>Ideal for further GIS processing</li>
+</ul>
+<h3 id="png-tiles">2. PNG Tiles</h3>
+<ul>
+<li>Lightweight image format</li>
+<li>Full transparency support</li>
+<li>High-quality rendering</li>
+<li>Bilinear interpolation</li>
+<li>Anti-aliasing enabled</li>
+<li>Web-friendly format</li>
+<li>Reduced file size</li>
+<li>Suitable for web mapping</li>
+</ul>
+<h3 id="kmz-overlay">3. KMZ Overlay</h3>
+<ul>
+<li>Google Earth compatible</li>
+<li>Contains all tiles properly positioned</li>
+<li>Includes transparency settings</li>
+<li>Preserves geographic coordinates</li>
+<li>Easy to share and view</li>
+<li>Automatic tile organization</li>
+</ul>
+<h2 id="best-practices">Best Practices</h2>
+<h3 id="input-files">1. Input Files</h3>
+<ul>
+<li>Use properly georeferenced GeoTIFF files</li>
+<li>Ensure input file has valid CRS information</li>
+<li>Verify file permissions</li>
+<li>Check file size and memory availability</li>
+</ul>
+<h3 id="output-selection">2. Output Selection</h3>
+<ul>
+<li>Choose GeoTIFF for preserving geographic data</li>
+<li>Use PNG for web applications or when transparency is needed</li>
+<li>Enable KMZ generation for Google Earth visualization</li>
+<li>Consider file size requirements</li>
+</ul>
+<h3 id="performance-optimization">3. Performance Optimization</h3>
+<ul>
+<li>Balance tile numbers with system memory</li>
+<li>Consider output format based on use case</li>
+<li>Use appropriate CRS for your region</li>
+<li>Monitor processing resources</li>
+</ul>
+<h3 id="quality-settings">4. Quality Settings</h3>
+<ul>
+<li>Adjust opacity as needed (0-100%)</li>
+<li>Use antialiasing for better visual quality</li>
+<li>Enable high-quality rendering for important outputs</li>
+<li>Verify output quality before large batch processing</li>
+</ul>
+<h2 id="technical-details">Technical Details</h2>
+<h3 id="image-processing">1. Image Processing</h3>
+<ul>
+<li>Bilinear interpolation for smooth scaling</li>
+<li>Alpha channel support for transparency</li>
+<li>High-quality rendering pipeline</li>
+<li>Memory-efficient tile processing</li>
+</ul>
+<h3 id="geographic-handling">2. Geographic Handling</h3>
+<ul>
+<li>Precise coordinate transformation</li>
+<li>CRS preservation and conversion</li>
+<li>Accurate boundary calculations</li>
+<li>Proper georeferencing in outputs</li>
+</ul>
+<h3 id="error-handling">3. Error Handling</h3>
+<ul>
+<li>Comprehensive input validation</li>
+<li>Detailed error messages</li>
+<li>Graceful failure handling</li>
+<li>User-friendly status updates</li>
+</ul>
+<h2 id="application-architecture-and-diagrams">Application Architecture
+and Diagrams</h2>
+<h3 id="system-flow-chart">System Flow Chart</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#32CD32&#39;, &#39;edgeLabelBackground&#39;:&#39;#FFFFFF&#39;, &#39;tertiaryColor&#39;: &#39;#fff0f0&#39;}}}%%
+flowchart TD
+    style Start fill:#32CD32,stroke:#006400,stroke-width:2px
+    style Complete fill:#32CD32,stroke:#006400,stroke-width:2px
+    style ShowError fill:#FF6B6B,stroke:#CC0000,stroke-width:2px
+    style KMZOption fill:#FFD700,stroke:#B8860B,stroke-width:2px
+
+    Start([🚀 Start]) --&gt; InputFile[/📂 Select GeoTIFF File/]
+    InputFile --&gt; ValidateFile{Valid File?}
+    ValidateFile --&gt;|No| ShowError[❌ Show Error]
+    ShowError --&gt; InputFile
+    ValidateFile --&gt;|Yes| ConfigureSettings[⚙️ Configure Settings]
+    ConfigureSettings --&gt; ProcessSettings[/Process Settings/]
+    ProcessSettings --&gt; SplitImage[🔄 Split Image]
+    SplitImage --&gt; SaveTiles[💾 Save Tiles]
+    SaveTiles --&gt; KMZOption{Create KMZ?}
+    KMZOption --&gt;|Yes| CreateKMZ[📦 Generate KMZ]
+    KMZOption --&gt;|No| Complete
+    CreateKMZ --&gt; Complete([✅ Complete])
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef process fill:#BBE5F3,stroke:#0099CC,stroke-width:2px;
+    classDef decision fill:#FFE5CC,stroke:#FF9933,stroke-width:2px;
+    
+    class InputFile,ProcessSettings,SplitImage,SaveTiles,CreateKMZ process;
+    class ValidateFile,KMZOption decision;</code></pre>
+<h3 id="data-flow-diagram-level-0">Data Flow Diagram (Level 0)</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#3498db&#39;, &#39;lineColor&#39;: &#39;#2ecc71&#39;}}}%%
+flowchart LR
+    subgraph User Operations
+        User((👤 User))
+    end
+    
+    subgraph Core Process
+        Process[GeoTIFF Splitter]
+    end
+    
+    User --&gt;|📂 Input GeoTIFF| Process
+    Process --&gt;|🗂️ Tiles| User
+    Process --&gt;|📦 KMZ Overlay| User
+    Process --&gt;|📊 Status| User
+    User --&gt;|⚙️ Settings| Process
+
+    style Process fill:#3498db,stroke:#2980b9,stroke-width:2px
+    style User fill:#e74c3c,stroke:#c0392b,stroke-width:2px</code></pre>
+<h3 id="component-architecture">Component Architecture</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#9b59b6&#39;, &#39;secondaryColor&#39;: &#39;#1abc9c&#39;}}}%%
+graph TB
+    subgraph UI Layer
+        UI[User Interface]
+        Settings[Settings Panel]
+        Progress[Progress Monitor]
+    end
+
+    subgraph Processing Layer
+        Processor[GeoTIFF Processor]
+        TileManager[Tile Manager]
+        KMZBuilder[KMZ Builder]
+    end
+
+    subgraph Data Layer
+        FileSystem[File System]
+        Cache[Memory Cache]
+    end
+
+    UI --&gt; Settings
+    UI --&gt; Progress
+    Settings --&gt; Processor
+    Processor --&gt; TileManager
+    TileManager --&gt; KMZBuilder
+    Processor --&gt; FileSystem
+    TileManager --&gt; Cache
+    KMZBuilder --&gt; FileSystem
+
+    classDef uiLayer fill:#9b59b6,stroke:#8e44ad,color:white;
+    classDef processLayer fill:#1abc9c,stroke:#16a085,color:white;
+    classDef dataLayer fill:#e67e22,stroke:#d35400,color:white;
+
+    class UI,Settings,Progress uiLayer;
+    class Processor,TileManager,KMZBuilder processLayer;
+    class FileSystem,Cache dataLayer;</code></pre>
+<h3 id="sequence-diagram">Sequence Diagram</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#3498db&#39;, &#39;secondaryColor&#39;: &#39;#2ecc71&#39;, &#39;tertiaryColor&#39;: &#39;#e74c3c&#39;}}}%%
+sequenceDiagram
+    participant U as 👤 User
+    participant UI as 🖥️ UI
+    participant P as ⚙️ Processor
+    participant T as 🗂️ TileManager
+    participant F as 💾 FileSystem
+
+    rect rgb(240, 248, 255)
+        Note over U,F: File Selection Phase
+        U-&gt;&gt;+UI: Select GeoTIFF
+        UI-&gt;&gt;+P: Initialize
+        P-&gt;&gt;+F: Read File
+        F--&gt;&gt;-P: File Data
+        P--&gt;&gt;-UI: Ready
+        UI--&gt;&gt;-U: Show Settings
+    end
+
+    rect rgb(255, 248, 240)
+        Note over U,F: Processing Phase
+        U-&gt;&gt;+UI: Configure Settings
+        UI-&gt;&gt;+P: Process File
+        P-&gt;&gt;+T: Generate Tiles
+        T-&gt;&gt;F: Save Tiles
+        T--&gt;&gt;-P: Tiles Created
+        
+        opt Create KMZ
+            P-&gt;&gt;P: Generate KML
+            P-&gt;&gt;F: Create KMZ
+        end
+        
+        P--&gt;&gt;-UI: Complete
+        UI--&gt;&gt;-U: Show Results
+    end</code></pre>
+<h3 id="class-relationship-diagram">Class Relationship Diagram</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#2ecc71&#39;, &#39;secondaryColor&#39;: &#39;#3498db&#39;}}}%%
+classDiagram
+    direction TB
+    
+    class SplitterUI {
+        &lt;&lt;GUI Controller&gt;&gt;
+        -File selectedFile
+        -Settings settings
+        -ProcessorManager manager
+        +initialize()
+        +handleFileSelection()
+        +processFile()
+    }
+
+    class Settings {
+        &lt;&lt;Configuration&gt;&gt;
+        -int tilesX
+        -int tilesY
+        -String outputFormat
+        -float opacity
+        -boolean createKMZ
+        +validate()
+        +apply()
+    }
+
+    class ProcessorManager {
+        &lt;&lt;Service&gt;&gt;
+        -GeoTiffProcessor processor
+        -TileManager tileManager
+        -KMZBuilder kmzBuilder
+        +process()
+        +createOutput()
+    }
+
+    class GeoTiffProcessor {
+        &lt;&lt;Core&gt;&gt;
+        -GridCoverage2D coverage
+        -CoordinateReferenceSystem crs
+        +splitTiles()
+        +transformCoordinates()
+    }
+
+    class TileManager {
+        &lt;&lt;Core&gt;&gt;
+        -List~TileInfo~ tiles
+        +generateTiles()
+        +saveTiles()
+    }
+
+    class KMZBuilder {
+        &lt;&lt;Utility&gt;&gt;
+        +createKML()
+        +packageKMZ()
+    }
+
+    SplitterUI --&gt; Settings
+    SplitterUI --&gt; ProcessorManager
+    ProcessorManager --&gt; GeoTiffProcessor
+    ProcessorManager --&gt; TileManager
+    ProcessorManager --&gt; KMZBuilder
+    GeoTiffProcessor --&gt; TileManager
+
+    class SplitterUI {
+        backgroundColor:#2ecc71
+    }
+    class Settings {
+        backgroundColor:#3498db
+    }
+    class ProcessorManager {
+        backgroundColor:#e74c3c
+    }</code></pre>
+<h3 id="data-structure-er">Data Structure (ER)</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#9b59b6&#39;, &#39;secondaryColor&#39;: &#39;#1abc9c&#39;}}}%%
+erDiagram
+    GeoTIFF ||--o{ Tile : contains
+    Tile ||--o{ Metadata : has
+    Tile ||--o{ Image : has
+    KMZ ||--o{ Tile : contains
+    KMZ ||--o{ KML : contains
+    
+    GeoTIFF {
+        string filename PK
+        string crs FK
+        int width
+        int height
+        geometry bounds
+        timestamp created_at
+    }
+
+    Tile {
+        int id PK
+        int x
+        int y
+        int width
+        int height
+        geometry bounds
+        float opacity
+    }
+
+    Metadata {
+        int tile_id FK
+        string crs
+        double north
+        double south
+        double east
+        double west
+        json properties
+    }
+
+    Image {
+        int tile_id FK
+        blob data
+        string format
+        int width
+        int height
+        float opacity
+    }
+
+    KML {
+        string id PK
+        string version
+        string description
+        timestamp created_at
+        array overlays
+    }
+
+    style GeoTIFF fill:#9b59b6,stroke:#8e44ad,color:white
+    style Tile fill:#1abc9c,stroke:#16a085,color:white
+    style Metadata fill:#e67e22,stroke:#d35400,color:white
+    style Image fill:#3498db,stroke:#2980b9,color:white
+    style KML fill:#e74c3c,stroke:#c0392b,color:white</code></pre>
+<h3 id="processing-pipeline-1">Processing Pipeline</h3>
+<pre class="mermaid"><code>%%{init: {&#39;theme&#39;: &#39;base&#39;, &#39;themeVariables&#39;: { &#39;primaryColor&#39;: &#39;#2ecc71&#39;, &#39;secondaryColor&#39;: &#39;#3498db&#39;, &#39;tertiaryColor&#39;: &#39;#e74c3c&#39;}}}%%
+graph LR
+    subgraph Input
+        A[📂 GeoTIFF Input] --&gt; B[🔍 Validate]
+    end
+    
+    subgraph Processing
+        B --&gt; C{⚙️ Process}
+        C --&gt; D[✂️ Split Tiles]
+        D --&gt; E[💾 Save]
+    end
+    
+    subgraph Output
+        E --&gt; F{📤 Format}
+        F --&gt;|GeoTIFF| G[🗺️ GeoTIFF Tiles]
+        F --&gt;|PNG| H[🖼️ PNG Tiles]
+        G &amp; H --&gt; I{📦 KMZ?}
+        I --&gt;|Yes| J[📄 Generate KML]
+        J --&gt; K[🎁 Package KMZ]
+        I --&gt;|No| L[✅ Complete]
+        K --&gt; L
+    end
+
+    classDef input fill:#2ecc71,stroke:#27ae60,color:white;
+    classDef process fill:#3498db,stroke:#2980b9,color:white;
+    classDef output fill:#e74c3c,stroke:#c0392b,color:white;
+    classDef decision fill:#f1c40f,stroke:#f39c12,color:black;
+
+    class A,B input;
+    class C,D,E process;
+    class G,H,J,K,L output;
+    class F,I decision;</code></pre>
+<p>These enhanced diagrams feature: - Consistent color schemes - Icons
+and emojis for better visualization - Clear grouping and subgraphs -
+Improved typography and styling - Better visual hierarchy - Detailed
+relationships and flows - Professional-looking design elements</p>
+<p>The diagrams use Mermaid’s advanced features: - Theme initialization
+- Custom styling - Direction controls - Subgraphs - Icons and emojis -
+Color schemes - Advanced layouts</p>
+<p>Each diagram is now more visually appealing and easier to understand
+while maintaining its technical accuracy.</p>
+<h2 id="developer-information">Developer Information</h2>
+<ul>
+<li><strong>Developer</strong>: Angel (Mehul) Singh</li>
+<li><strong>Email</strong>: angelsingh2199@gmail.com</li>
+<li><strong>Company</strong>: BR31 - Technologies Pvt. Ltd.</li>
+<li><strong>Website</strong>: https://br31tech.com</li>
+<li><strong>LinkedIn</strong>: https://linkedin.com/in/angel3002</li>
+</ul>
+<h2 id="support-and-updates">Support and Updates</h2>
+<p>The application is actively maintained and supported. For issues,
+feature requests, or contributions: 1. Contact developer via email 2.
+Visit the company website 3. Create issues on the GitHub repository 4.
+Check for regular updates</p>
+<p>This documentation provides a comprehensive overview of the
+application’s capabilities, recent improvements, and technical details.
+For specific questions or support, please contact the development
+team.</p>
+</body>
+</html>

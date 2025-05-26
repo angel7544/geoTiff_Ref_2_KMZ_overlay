@@ -1,0 +1,19 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#3498db', 'lineColor': '#2ecc71'}}}%%
+flowchart LR
+    subgraph User Operations
+        User((👤 User))
+    end
+    
+    subgraph Core Process
+        Process[GeoTIFF Splitter]
+    end
+    
+    User -->|📂 Input GeoTIFF| Process
+    Process -->|🗂️ Tiles| User
+    Process -->|📦 KMZ Overlay| User
+    Process -->|📊 Status| User
+    User -->|⚙️ Settings| Process
+
+    style Process fill:#3498db,stroke:#2980b9,stroke-width:2px
+    style User fill:#e74c3c,stroke:#c0392b,stroke-width:2px

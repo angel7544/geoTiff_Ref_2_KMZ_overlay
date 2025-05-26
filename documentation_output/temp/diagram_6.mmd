@@ -1,0 +1,33 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2ecc71', 'secondaryColor': '#3498db', 'tertiaryColor': '#e74c3c'}}}%%
+graph LR
+    subgraph Input
+        A[📂 GeoTIFF Input] --> B[🔍 Validate]
+    end
+    
+    subgraph Processing
+        B --> C{⚙️ Process}
+        C --> D[✂️ Split Tiles]
+        D --> E[💾 Save]
+    end
+    
+    subgraph Output
+        E --> F{📤 Format}
+        F -->|GeoTIFF| G[🗺️ GeoTIFF Tiles]
+        F -->|PNG| H[🖼️ PNG Tiles]
+        G & H --> I{📦 KMZ?}
+        I -->|Yes| J[📄 Generate KML]
+        J --> K[🎁 Package KMZ]
+        I -->|No| L[✅ Complete]
+        K --> L
+    end
+
+    classDef input fill:#2ecc71,stroke:#27ae60,color:white;
+    classDef process fill:#3498db,stroke:#2980b9,color:white;
+    classDef output fill:#e74c3c,stroke:#c0392b,color:white;
+    classDef decision fill:#f1c40f,stroke:#f39c12,color:black;
+
+    class A,B input;
+    class C,D,E process;
+    class G,H,J,K,L output;
+    class F,I decision;

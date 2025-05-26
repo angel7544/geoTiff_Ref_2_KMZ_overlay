@@ -1,0 +1,27 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#32CD32', 'edgeLabelBackground':'#FFFFFF', 'tertiaryColor': '#fff0f0'}}}%%
+flowchart TD
+    style Start fill:#32CD32,stroke:#006400,stroke-width:2px
+    style Complete fill:#32CD32,stroke:#006400,stroke-width:2px
+    style ShowError fill:#FF6B6B,stroke:#CC0000,stroke-width:2px
+    style KMZOption fill:#FFD700,stroke:#B8860B,stroke-width:2px
+
+    Start([🚀 Start]) --> InputFile[/📂 Select GeoTIFF File/]
+    InputFile --> ValidateFile{Valid File?}
+    ValidateFile -->|No| ShowError[❌ Show Error]
+    ShowError --> InputFile
+    ValidateFile -->|Yes| ConfigureSettings[⚙️ Configure Settings]
+    ConfigureSettings --> ProcessSettings[/Process Settings/]
+    ProcessSettings --> SplitImage[🔄 Split Image]
+    SplitImage --> SaveTiles[💾 Save Tiles]
+    SaveTiles --> KMZOption{Create KMZ?}
+    KMZOption -->|Yes| CreateKMZ[📦 Generate KMZ]
+    KMZOption -->|No| Complete
+    CreateKMZ --> Complete([✅ Complete])
+
+    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef process fill:#BBE5F3,stroke:#0099CC,stroke-width:2px;
+    classDef decision fill:#FFE5CC,stroke:#FF9933,stroke-width:2px;
+    
+    class InputFile,ProcessSettings,SplitImage,SaveTiles,CreateKMZ process;
+    class ValidateFile,KMZOption decision;

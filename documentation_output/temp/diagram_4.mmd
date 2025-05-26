@@ -1,0 +1,72 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2ecc71', 'secondaryColor': '#3498db'}}}%%
+classDiagram
+    direction TB
+    
+    class SplitterUI {
+        <<GUI Controller>>
+        -File selectedFile
+        -Settings settings
+        -ProcessorManager manager
+        +initialize()
+        +handleFileSelection()
+        +processFile()
+    }
+
+    class Settings {
+        <<Configuration>>
+        -int tilesX
+        -int tilesY
+        -String outputFormat
+        -float opacity
+        -boolean createKMZ
+        +validate()
+        +apply()
+    }
+
+    class ProcessorManager {
+        <<Service>>
+        -GeoTiffProcessor processor
+        -TileManager tileManager
+        -KMZBuilder kmzBuilder
+        +process()
+        +createOutput()
+    }
+
+    class GeoTiffProcessor {
+        <<Core>>
+        -GridCoverage2D coverage
+        -CoordinateReferenceSystem crs
+        +splitTiles()
+        +transformCoordinates()
+    }
+
+    class TileManager {
+        <<Core>>
+        -List~TileInfo~ tiles
+        +generateTiles()
+        +saveTiles()
+    }
+
+    class KMZBuilder {
+        <<Utility>>
+        +createKML()
+        +packageKMZ()
+    }
+
+    SplitterUI --> Settings
+    SplitterUI --> ProcessorManager
+    ProcessorManager --> GeoTiffProcessor
+    ProcessorManager --> TileManager
+    ProcessorManager --> KMZBuilder
+    GeoTiffProcessor --> TileManager
+
+    class SplitterUI {
+        backgroundColor:#2ecc71
+    }
+    class Settings {
+        backgroundColor:#3498db
+    }
+    class ProcessorManager {
+        backgroundColor:#e74c3c
+    }

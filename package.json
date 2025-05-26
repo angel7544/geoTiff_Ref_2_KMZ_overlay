@@ -1,0 +1,18 @@
+{
+  "name": "kmz-splitter",
+  "version": "1.0.0",
+  "description": "A Java-based utility for processing georeferenced files (KMZ and GeoTIFF) with a modern GUI interface. The application supports:\r - Processing both KMZ and GeoTIFF input files\r - Extracting and splitting images into configurable tiles\r - Auto-generating georeferenced outputs\r - Merging tiles into combined outputs\r - Coordinate system transformation",
+  "main": "convert_docs.js",
+  "directories": {
+    "lib": "lib"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "puppeteer": "^24.9.0"
+  }
+}

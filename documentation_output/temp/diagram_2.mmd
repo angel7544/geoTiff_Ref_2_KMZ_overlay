@@ -1,0 +1,36 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#9b59b6', 'secondaryColor': '#1abc9c'}}}%%
+graph TB
+    subgraph UI Layer
+        UI[User Interface]
+        Settings[Settings Panel]
+        Progress[Progress Monitor]
+    end
+
+    subgraph Processing Layer
+        Processor[GeoTIFF Processor]
+        TileManager[Tile Manager]
+        KMZBuilder[KMZ Builder]
+    end
+
+    subgraph Data Layer
+        FileSystem[File System]
+        Cache[Memory Cache]
+    end
+
+    UI --> Settings
+    UI --> Progress
+    Settings --> Processor
+    Processor --> TileManager
+    TileManager --> KMZBuilder
+    Processor --> FileSystem
+    TileManager --> Cache
+    KMZBuilder --> FileSystem
+
+    classDef uiLayer fill:#9b59b6,stroke:#8e44ad,color:white;
+    classDef processLayer fill:#1abc9c,stroke:#16a085,color:white;
+    classDef dataLayer fill:#e67e22,stroke:#d35400,color:white;
+
+    class UI,Settings,Progress uiLayer;
+    class Processor,TileManager,KMZBuilder processLayer;
+    class FileSystem,Cache dataLayer;

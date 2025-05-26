@@ -16,6 +16,7 @@ import javafx.scene.paint.Color;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.zip.Deflater;
 
 public class SplitterUI extends Application {
     private File selectedFile;
@@ -26,6 +27,14 @@ public class SplitterUI extends Application {
     private CheckBox mergeToKmzCheckbox;
     private Label statusLabel;
     private Slider opacitySlider;
+    private TextField minXField;
+    private TextField minYField;
+    private TextField maxXField;
+    private TextField maxYField;
+    private CheckBox manualGeoreferencingCheckbox;
+    private ProgressIndicator progressIndicator;
+    private Button processButton;
+    private ComboBox<String> compressionComboBox;
 
     // Add developer info constants
     private static final String DEVELOPER_NAME = "Angel (Mehul) Singh";
@@ -43,9 +52,9 @@ public class SplitterUI extends Application {
         "EPSG:32646"  // UTM zone 46N
     };
 
-    private static final double WINDOW_SIZE = 600;
+    private static final double WINDOW_SIZE = 800;
     private static final double PADDING = 10;
-    private static final double SPACING = 8;
+    private static final double SPACING = 10;
 
     public static void main(String[] args) {
         launch(args);
@@ -142,7 +151,7 @@ public class SplitterUI extends Application {
         selectFileButton.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("GeoReferenced Image files", "*.tif", "*.tiff")
+                new FileChooser.ExtensionFilter("GeoReferenced Image files", "*.tif", "*.tiff", "*.jp2", "*.j2k", "*.jpg", "*.jpeg")
             );
             File file = fileChooser.showOpenDialog(null);
             if (file != null) {
@@ -165,17 +174,18 @@ public class SplitterUI extends Application {
         sectionTitle.getStyleClass().add("section-title");
 
         // Create a grid for compact layout
+        GridPane settingsGrid = createSettingsGrid();
+
+        section.getChildren().addAll(sectionTitle, settingsGrid);
+        return section;
+    }
+
+    private GridPane createSettingsGrid() {
         GridPane settingsGrid = new GridPane();
         settingsGrid.setHgap(SPACING);
         settingsGrid.setVgap(SPACING);
         settingsGrid.setAlignment(Pos.CENTER);
-        
-        // Column constraints for better organization
-        ColumnConstraints col1 = new ColumnConstraints();
-        ColumnConstraints col2 = new ColumnConstraints();
-        col1.setPercentWidth(30);
-        col2.setPercentWidth(70);
-        settingsGrid.getColumnConstraints().addAll(col1, col2);
+        settingsGrid.setMaxWidth(Double.MAX_VALUE);
 
         // Add CRS selection
         Label crsLabel = new Label("Target CRS:");
@@ -200,6 +210,13 @@ public class SplitterUI extends Application {
         fileTypeComboBox.setValue("GeoTIFF Tiles");
         fileTypeComboBox.setMaxWidth(Double.MAX_VALUE);
 
+        // Add compression options
+        Label compressionLabel = new Label("Compression:");
+        compressionComboBox = new ComboBox<>();
+        compressionComboBox.getItems().addAll("LZW", "DEFLATE", "NONE");
+        compressionComboBox.setValue("LZW");
+        compressionComboBox.setMaxWidth(Double.MAX_VALUE);
+
         // Add opacity control
         Label opacityLabel = new Label("Opacity:");
         opacitySlider = new Slider(0, 1, 1);
@@ -208,7 +225,38 @@ public class SplitterUI extends Application {
         opacitySlider.setShowTickMarks(true);
         opacitySlider.setMajorTickUnit(0.25);
 
-        // Add KMZ/KML options
+        // Manual Georeferencing Section
+        manualGeoreferencingCheckbox = new CheckBox("Manual Georeferencing");
+        manualGeoreferencingCheckbox.setSelected(false);
+
+        // Create coordinate input fields
+        minXField = new TextField();
+        minYField = new TextField();
+        maxXField = new TextField();
+        maxYField = new TextField();
+
+        // Labels for coordinate fields
+        Label minXLabel = new Label("Min X (West):");
+        Label minYLabel = new Label("Min Y (South):");
+        Label maxXLabel = new Label("Max X (East):");
+        Label maxYLabel = new Label("Max Y (North):");
+
+        // Disable coordinate fields by default
+        minXField.setDisable(true);
+        minYField.setDisable(true);
+        maxXField.setDisable(true);
+        maxYField.setDisable(true);
+
+        // Enable/disable coordinate fields based on checkbox
+        manualGeoreferencingCheckbox.setOnAction(e -> {
+            boolean isManual = manualGeoreferencingCheckbox.isSelected();
+            minXField.setDisable(!isManual);
+            minYField.setDisable(!isManual);
+            maxXField.setDisable(!isManual);
+            maxYField.setDisable(!isManual);
+        });
+
+        // Initialize KMZ checkbox
         mergeToKmzCheckbox = new CheckBox("Create KMZ overlay");
         mergeToKmzCheckbox.setSelected(true);
         mergeToKmzCheckbox.setMaxWidth(Double.MAX_VALUE);
@@ -226,15 +274,32 @@ public class SplitterUI extends Application {
         
         settingsGrid.add(formatLabel, 0, row);
         settingsGrid.add(fileTypeComboBox, 1, row++);
+
+        settingsGrid.add(compressionLabel, 0, row);
+        settingsGrid.add(compressionComboBox, 1, row++);
         
         settingsGrid.add(opacityLabel, 0, row);
         settingsGrid.add(opacitySlider, 1, row++);
 
+        // Add manual georeferencing section
+        settingsGrid.add(manualGeoreferencingCheckbox, 0, row++, 2, 1);
+        
+        settingsGrid.add(minXLabel, 0, row);
+        settingsGrid.add(minXField, 1, row++);
+        
+        settingsGrid.add(minYLabel, 0, row);
+        settingsGrid.add(minYField, 1, row++);
+        
+        settingsGrid.add(maxXLabel, 0, row);
+        settingsGrid.add(maxXField, 1, row++);
+        
+        settingsGrid.add(maxYLabel, 0, row);
+        settingsGrid.add(maxYField, 1, row++);
+
         // Add merge checkbox spanning both columns
         settingsGrid.add(mergeToKmzCheckbox, 0, row, 2, 1);
 
-        section.getChildren().addAll(sectionTitle, settingsGrid);
-        return section;
+        return settingsGrid;
     }
 
     private VBox createProcessSection() {
@@ -242,10 +307,20 @@ public class SplitterUI extends Application {
         section.setAlignment(Pos.CENTER);
         section.setMaxWidth(Double.MAX_VALUE);
 
-        Button processButton = new Button("Process");
+        // Create HBox for process button and progress indicator
+        HBox processBox = new HBox(SPACING);
+        processBox.setAlignment(Pos.CENTER);
+
+        processButton = new Button("Process");
         processButton.getStyleClass().add("process-button");
         processButton.setMaxWidth(200);
         processButton.setOnAction(e -> processFile());
+
+        progressIndicator = new ProgressIndicator();
+        progressIndicator.setVisible(false);
+        progressIndicator.setPrefSize(24, 24);
+
+        processBox.getChildren().addAll(processButton, progressIndicator);
 
         statusLabel = new Label("");
         statusLabel.getStyleClass().add("status-label");
@@ -253,7 +328,7 @@ public class SplitterUI extends Application {
         statusLabel.setMaxWidth(Double.MAX_VALUE);
         statusLabel.setMinHeight(40);
 
-        section.getChildren().addAll(processButton, statusLabel);
+        section.getChildren().addAll(processBox, statusLabel);
         return section;
     }
 
@@ -375,13 +450,17 @@ public class SplitterUI extends Application {
         TextArea usageText = new TextArea(
             "Step-by-Step Guide:\n\n" +
             "1. Select Input File\n" +
-            "   • Click 'Select GeoTIFF' button\n" +
-            "   • Choose a .tif or .tiff file with geographic data\n\n" +
+            "   • Click 'Select File' button\n" +
+            "   • Choose from supported formats:\n" +
+            "     - GeoTIFF files (.tif, .tiff)\n" +
+            "     - JPEG2000 files (.jp2, .j2k)\n" +
+            "     - JPEG files (.jpg, .jpeg)\n\n" +
             "2. Configure Settings\n" +
             "   • Set number of tiles (X and Y)\n" +
             "   • Choose target coordinate system (CRS)\n" +
             "   • Adjust tile opacity if needed\n" +
-            "   • Select output format (GeoTIFF or KMZ)\n\n" +
+            "   • Select output format (GeoTIFF or PNG)\n" +
+            "   • For JPEG2000 and JPEG files, set manual georeferencing\n\n" +
             "3. Process the File\n" +
             "   • Click 'Process' button\n" +
             "   • Wait for processing to complete\n" +
@@ -390,13 +469,14 @@ public class SplitterUI extends Application {
             "• Individual tiles: output/tiles/\n" +
             "• KMZ file (if selected): output/merged.kmz\n\n" +
             "Supported Data:\n" +
-            "• GeoTIFF files (.tif, .tiff)\n" +
-            "• Files with embedded geographic coordinates\n" +
+            "• GeoTIFF files (.tif, .tiff) - with embedded coordinates\n" +
+            "• JPEG2000 files (.jp2, .j2k) - requires manual coordinates\n" +
+            "• JPEG files (.jpg, .jpeg) - requires manual coordinates\n" +
             "• Various coordinate reference systems\n\n" +
             "Tips:\n" +
             "• Larger tile numbers create smaller individual tiles\n" +
             "• Use KMZ format for Google Earth compatibility\n" +
-            "• Preserve original CRS when accuracy is critical"
+            "• For non-GeoTIFF files, ensure accurate coordinates"
         );
         usageText.setWrapText(true);
         usageText.setEditable(false);
@@ -438,65 +518,182 @@ public class SplitterUI extends Application {
             return;
         }
 
-        try {
-            int tilesX = Integer.parseInt(tilesXField.getText());
-            int tilesY = Integer.parseInt(tilesYField.getText());
+        // Disable process button and show progress
+        processButton.setDisable(true);
+        progressIndicator.setVisible(true);
+        statusLabel.setText("Processing...");
 
-            if (tilesX <= 0 || tilesY <= 0) {
-                statusLabel.setText("Number of tiles must be positive");
-                return;
+        // Run processing in background thread
+        Thread processThread = new Thread(() -> {
+            try {
+                int tilesX = Integer.parseInt(tilesXField.getText());
+                int tilesY = Integer.parseInt(tilesYField.getText());
+
+                if (tilesX <= 0 || tilesY <= 0) {
+                    updateUI(() -> {
+                        statusLabel.setText("Number of tiles must be positive");
+                        resetProcessUI();
+                    });
+                    return;
+                }
+
+                // Check if manual georeferencing is needed for JP2 files
+                String fileName = selectedFile.getName().toLowerCase();
+                boolean isJP2 = fileName.endsWith(".jp2") || fileName.endsWith(".j2k");
+                boolean isJPEG = fileName.endsWith(".jpg") || fileName.endsWith(".jpeg");
+                
+                if ((isJP2 || isJPEG) && !manualGeoreferencingCheckbox.isSelected()) {
+                    updateUI(() -> {
+                        statusLabel.setText("Manual georeferencing is required for JPEG2000 and JPEG images");
+                        resetProcessUI();
+                    });
+                    return;
+                }
+
+                // Validate manual coordinates if enabled
+                if (manualGeoreferencingCheckbox.isSelected()) {
+                    try {
+                        double minX = Double.parseDouble(minXField.getText());
+                        double minY = Double.parseDouble(minYField.getText());
+                        double maxX = Double.parseDouble(maxXField.getText());
+                        double maxY = Double.parseDouble(maxYField.getText());
+
+                        if (maxX <= minX || maxY <= minY) {
+                            updateUI(() -> {
+                                statusLabel.setText("Invalid coordinates: max values must be greater than min values");
+                                resetProcessUI();
+                            });
+                            return;
+                        }
+                    } catch (NumberFormatException e) {
+                        updateUI(() -> {
+                            statusLabel.setText("Please enter valid coordinates");
+                            resetProcessUI();
+                        });
+                        return;
+                    }
+                }
+
+                // Create output directory
+                File outputDir = new File(selectedFile.getParent(), "output");
+                outputDir.mkdirs();
+
+                // Process the file
+                GeoTiffProcessor processor = new GeoTiffProcessor(selectedFile);
+
+                // Set compression options
+                String compressionType = compressionComboBox.getValue();
+                processor.setCompressionOptions(compressionType, Deflater.BEST_COMPRESSION);
+
+                // Set manual georeferencing if enabled
+                if (manualGeoreferencingCheckbox.isSelected()) {
+                    processor.setManualGeoreferencing(true,
+                        Double.parseDouble(minXField.getText()),
+                        Double.parseDouble(minYField.getText()),
+                        Double.parseDouble(maxXField.getText()),
+                        Double.parseDouble(maxYField.getText())
+                    );
+                }
+
+                processor.process();
+
+                // Set target CRS if different from source
+                String targetCRSCode = targetCRSComboBox.getValue();
+                if (targetCRSCode != null && !targetCRSCode.isEmpty()) {
+                    processor.setTargetCRS(CRS.decode(targetCRSCode));
+                }
+
+                // Get opacity value
+                float opacity = (float) opacitySlider.getValue();
+                processor.setTileOpacity(opacity);
+
+                // Get output format
+                String outputFormat = fileTypeComboBox.getValue().startsWith("PNG") ? "PNG" : "GeoTIFF";
+
+                // Split into tiles with specified format
+                List<TileInfo> tiles = processor.splitIntoTiles(tilesX, tilesY, outputDir, outputFormat);
+
+                StringBuilder resultMessage = new StringBuilder();
+                resultMessage.append("Processing complete.\n");
+
+                // Add format-specific message
+                File tilesDir = new File(outputDir, "tiles");
+                resultMessage.append(String.format("Tiles saved as %s to: %s\n", 
+                    outputFormat.equals("PNG") ? "PNG files" : "GeoTIFF files",
+                    tilesDir.getPath()));
+
+                // Create KMZ if requested
+                if (mergeToKmzCheckbox.isSelected()) {
+                    updateUI(() -> statusLabel.setText("Creating KMZ overlay..."));
+                    
+                    Platform.runLater(() -> {
+                        FileChooser fileChooser = new FileChooser();
+                        fileChooser.setTitle("Save KMZ Overlay");
+                        fileChooser.setInitialDirectory(outputDir);
+                        fileChooser.setInitialFileName("overlay.kmz");
+                        fileChooser.getExtensionFilters().add(
+                            new FileChooser.ExtensionFilter("KMZ files", "*.kmz")
+                        );
+                        
+                        File kmzFile = fileChooser.showSaveDialog(processButton.getScene().getWindow());
+                        if (kmzFile != null) {
+                            try {
+                                processor.createMergedKMZ(tiles, kmzFile.getPath());
+                                resultMessage.append("KMZ overlay created at: ").append(kmzFile.getPath());
+                            } catch (IOException ex) {
+                                resultMessage.append("Error creating KMZ overlay: ").append(ex.getMessage());
+                            }
+                            updateUI(() -> {
+                                statusLabel.setText(resultMessage.toString());
+                                resetProcessUI();
+                            });
+                        } else {
+                            updateUI(() -> {
+                                statusLabel.setText(resultMessage.toString());
+                                resetProcessUI();
+                            });
+                        }
+                    });
+                } else {
+                    updateUI(() -> {
+                        statusLabel.setText(resultMessage.toString());
+                        resetProcessUI();
+                    });
+                }
+
+            } catch (NumberFormatException e) {
+                updateUI(() -> {
+                    statusLabel.setText("Invalid number of tiles");
+                    resetProcessUI();
+                });
+            } catch (IOException e) {
+                updateUI(() -> {
+                    statusLabel.setText("Error: " + e.getMessage());
+                    resetProcessUI();
+                });
+                e.printStackTrace();
+            } catch (FactoryException e) {
+                updateUI(() -> {
+                    statusLabel.setText("Invalid CRS code");
+                    resetProcessUI();
+                });
+                e.printStackTrace();
             }
+        });
 
-            // Create output directory
-            File outputDir = new File(selectedFile.getParent(), "output");
-            outputDir.mkdirs();
+        processThread.start();
+    }
 
-            // Process the file
-            GeoTiffProcessor processor = new GeoTiffProcessor(selectedFile);
-            processor.process();
-
-            // Set target CRS if different from source
-            String targetCRSCode = targetCRSComboBox.getValue();
-            if (targetCRSCode != null && !targetCRSCode.isEmpty()) {
-                processor.setTargetCRS(CRS.decode(targetCRSCode));
-            }
-
-            // Get opacity value
-            float opacity = (float) opacitySlider.getValue();
-            processor.setTileOpacity(opacity);
-
-            // Get output format
-            String outputFormat = fileTypeComboBox.getValue().startsWith("PNG") ? "PNG" : "GeoTIFF";
-
-            // Split into tiles with specified format
-            List<TileInfo> tiles = processor.splitIntoTiles(tilesX, tilesY, outputDir, outputFormat);
-
-            StringBuilder resultMessage = new StringBuilder();
-            resultMessage.append("Processing complete.\n");
-
-            // Add format-specific message
-            File tilesDir = new File(outputDir, "tiles");
-            resultMessage.append(String.format("Tiles saved as %s to: %s\n", 
-                outputFormat.equals("PNG") ? "PNG files" : "GeoTIFF files",
-                tilesDir.getPath()));
-
-            // Create KMZ if requested
-            if (mergeToKmzCheckbox.isSelected()) {
-                String kmzPath = new File(outputDir, "overlay.kmz").getPath();
-                processor.createMergedKMZ(tiles, kmzPath);
-                resultMessage.append("KMZ overlay created at: ").append(kmzPath);
-            }
-
-            statusLabel.setText(resultMessage.toString());
-
-        } catch (NumberFormatException e) {
-            statusLabel.setText("Invalid number of tiles");
-        } catch (IOException e) {
-            statusLabel.setText("Error: " + e.getMessage());
-            e.printStackTrace();
-        } catch (FactoryException e) {
-            statusLabel.setText("Invalid CRS code");
-            e.printStackTrace();
+    private void updateUI(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
         }
+    }
+
+    private void resetProcessUI() {
+        processButton.setDisable(false);
+        progressIndicator.setVisible(false);
     }
 } 

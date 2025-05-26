@@ -1,0 +1,10 @@
+Documentation Conversion Summary
+========================
+Input File: Documentation.md
+Output Directory: documentation_output
+Generated Files:
+- PDF: pdf\Documentation.pdf
+- Diagrams: diagrams (7 files)
+- Temporary Files: temp
+
+Generated on: 26/5/2025, 9:37:42 pm

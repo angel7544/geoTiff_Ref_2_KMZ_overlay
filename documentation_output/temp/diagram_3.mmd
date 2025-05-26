@@ -1,0 +1,35 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#3498db', 'secondaryColor': '#2ecc71', 'tertiaryColor': '#e74c3c'}}}%%
+sequenceDiagram
+    participant U as 👤 User
+    participant UI as 🖥️ UI
+    participant P as ⚙️ Processor
+    participant T as 🗂️ TileManager
+    participant F as 💾 FileSystem
+
+    rect rgb(240, 248, 255)
+        Note over U,F: File Selection Phase
+        U->>+UI: Select GeoTIFF
+        UI->>+P: Initialize
+        P->>+F: Read File
+        F-->>-P: File Data
+        P-->>-UI: Ready
+        UI-->>-U: Show Settings
+    end
+
+    rect rgb(255, 248, 240)
+        Note over U,F: Processing Phase
+        U->>+UI: Configure Settings
+        UI->>+P: Process File
+        P->>+T: Generate Tiles
+        T->>F: Save Tiles
+        T-->>-P: Tiles Created
+        
+        opt Create KMZ
+            P->>P: Generate KML
+            P->>F: Create KMZ
+        end
+        
+        P-->>-UI: Complete
+        UI-->>-U: Show Results
+    end

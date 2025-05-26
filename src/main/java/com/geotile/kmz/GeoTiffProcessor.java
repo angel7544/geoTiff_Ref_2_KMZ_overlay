@@ -7,13 +7,22 @@ import org.geotools.gce.geotiff.GeoTiffWriter;
 import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.referencing.operation.transform.AffineTransform2D;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
-
+import org.opengis.parameter.GeneralParameterValue;
+import org.opengis.parameter.ParameterValue;
+import org.geotools.gce.geotiff.GeoTiffFormat;
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
+import javax.imageio.plugins.jpeg.JPEGImageWriteParam;
+import javax.imageio.stream.ImageOutputStream;
+import javax.media.jai.PlanarImage;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
@@ -21,49 +30,137 @@ import java.awt.image.RenderedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
+import java.util.zip.Deflater;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class GeoTiffProcessor {
-    private final File geoTiffFile;
+    private final File inputFile;
     private GridCoverage2D coverage;
-    private Envelope2D bounds;
+    private ReferencedEnvelope bounds;
     private CoordinateReferenceSystem sourceCRS;
     private CoordinateReferenceSystem targetCRS;
     private float tileOpacity = 1.0f;
+    private boolean isManualGeoreferencing = false;
+    private double manualMinX, manualMinY, manualMaxX, manualMaxY;
+    private int compressionLevel = Deflater.BEST_COMPRESSION;
+    private String compressionType = "LZW"; // Options: LZW, DEFLATE, NONE
 
-    public GeoTiffProcessor(File geoTiffFile) {
-        this.geoTiffFile = geoTiffFile;
+    public GeoTiffProcessor(File inputFile) {
+        this.inputFile = inputFile;
+    }
+
+    public void setManualGeoreferencing(boolean enabled, double minX, double minY, double maxX, double maxY) {
+        this.isManualGeoreferencing = enabled;
+        this.manualMinX = minX;
+        this.manualMinY = minY;
+        this.manualMaxX = maxX;
+        this.manualMaxY = maxY;
+    }
+
+    public void setCompressionOptions(String type, int level) {
+        this.compressionType = type;
+        this.compressionLevel = level;
     }
 
     public void process() throws IOException {
         // Initialize EPSG database
         System.setProperty("org.geotools.referencing.forceXY", "true");
         
-        try {
-            // Reset the CRS factory
-            CRS.reset("all");
-            
-            // Create reader for the GeoTIFF file
-            GeoTiffReader reader = new GeoTiffReader(geoTiffFile);
-            
-            try {
-                coverage = reader.read(null);
-                bounds = coverage.getEnvelope2D();
-                sourceCRS = coverage.getCoordinateReferenceSystem();
-                
-                if (sourceCRS == null) {
-                    throw new IOException("No coordinate reference system found in the GeoTIFF file");
-                }
+        // Reset CRS factory
+        CRS.reset("all");
 
-                // Default target CRS is the same as source
-                targetCRS = sourceCRS;
-            } finally {
-                reader.dispose();
+        String fileName = inputFile.getName().toLowerCase();
+        if (fileName.endsWith(".jp2") || fileName.endsWith(".j2k")) {
+            processJP2();
+        } else if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg")) {
+            processJPEG();
+        } else {
+            processGeoTiff();
+        }
+    }
+
+    private void processJP2() throws IOException {
+        try {
+            // Read JPEG2000 image
+            BufferedImage image = ImageIO.read(inputFile);
+            if (image == null) {
+                throw new IOException("Failed to read JPEG2000 image");
             }
+
+            if (!isManualGeoreferencing) {
+                throw new IllegalStateException("Manual georeferencing is required for JPEG2000 images");
+            }
+
+            // Create envelope with manual coordinates
+            ReferencedEnvelope envelope = new ReferencedEnvelope(
+                manualMinX, manualMaxX, manualMinY, manualMaxY,
+                DefaultGeographicCRS.WGS84
+            );
+
+            // Create grid coverage
+            GridCoverageFactory factory = new GridCoverageFactory();
+            coverage = factory.create("coverage", image, envelope);
+            bounds = new ReferencedEnvelope(coverage.getEnvelope2D(), DefaultGeographicCRS.WGS84);
+            sourceCRS = DefaultGeographicCRS.WGS84;
+            targetCRS = sourceCRS;
+
         } catch (Exception e) {
-            throw new IOException("Failed to process GeoTIFF file", e);
+            throw new IOException("Failed to process JPEG2000 image: " + e.getMessage(), e);
+        }
+    }
+
+    private void processJPEG() throws IOException {
+        try {
+            // Read JPEG image
+            BufferedImage image = ImageIO.read(inputFile);
+            if (image == null) {
+                throw new IOException("Failed to read JPEG image");
+            }
+
+            if (!isManualGeoreferencing) {
+                throw new IllegalStateException("Manual georeferencing is required for JPEG images");
+            }
+
+            // Create envelope with manual coordinates
+            ReferencedEnvelope envelope = new ReferencedEnvelope(
+                manualMinX, manualMaxX, manualMinY, manualMaxY,
+                DefaultGeographicCRS.WGS84
+            );
+
+            // Create grid coverage
+            GridCoverageFactory factory = new GridCoverageFactory();
+            coverage = factory.create("coverage", image, envelope);
+            bounds = new ReferencedEnvelope(coverage.getEnvelope2D(), DefaultGeographicCRS.WGS84);
+            sourceCRS = DefaultGeographicCRS.WGS84;
+            targetCRS = sourceCRS;
+
+        } catch (Exception e) {
+            throw new IOException("Failed to process JPEG image: " + e.getMessage(), e);
+        }
+    }
+
+    private void processGeoTiff() throws IOException {
+        try {
+            GeoTiffReader reader = new GeoTiffReader(inputFile);
+            coverage = reader.read(null);
+            
+            if (isManualGeoreferencing) {
+                // Override bounds with manual coordinates
+                bounds = new ReferencedEnvelope(
+                    manualMinX, manualMaxX, manualMinY, manualMaxY,
+                    coverage.getCoordinateReferenceSystem()
+                );
+            } else {
+                bounds = new ReferencedEnvelope(coverage.getEnvelope2D(), coverage.getCoordinateReferenceSystem());
+            }
+            
+            sourceCRS = coverage.getCoordinateReferenceSystem();
+            targetCRS = sourceCRS;
+        } catch (Exception e) {
+            throw new IOException("Failed to process GeoTIFF: " + e.getMessage(), e);
         }
     }
 
@@ -206,13 +303,13 @@ public class GeoTiffProcessor {
                 )
             );
 
-            // Write the GeoTIFF
+            // Create GeoTIFF writer
             GeoTiffWriter writer = new GeoTiffWriter(outputFile);
-            try {
-                writer.write(tileCoverage, null);
-            } finally {
-                writer.dispose();
-            }
+
+            // Write with default parameters (this will still use system-level compression)
+            writer.write(tileCoverage, null);
+            writer.dispose();
+
         } catch (Exception e) {
             throw new IOException("Failed to save tile as GeoTIFF: " + e.getMessage(), e);
         }
@@ -236,10 +333,26 @@ public class GeoTiffProcessor {
             // Draw the tile image
             g.drawImage(tile.getImage(), 0, 0, null);
             g.dispose();
+
+            // Get PNG writer and configure for best compression
+            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("png");
+            if (!writers.hasNext()) {
+                throw new IOException("No PNG writer found");
+            }
             
-            // Write the PNG file
-            if (!ImageIO.write(pngImage, "PNG", outputFile)) {
-                throw new IOException("Failed to write PNG file: " + outputFile.getPath());
+            ImageWriter writer = writers.next();
+            ImageWriteParam writeParam = writer.getDefaultWriteParam();
+            
+            // PNG uses its own internal compression
+            try (ImageOutputStream output = ImageIO.createImageOutputStream(outputFile)) {
+                writer.setOutput(output);
+                // Use Adam7 interlacing for progressive loading
+                if (writeParam.canWriteProgressive()) {
+                    writeParam.setProgressiveMode(ImageWriteParam.MODE_DEFAULT);
+                }
+                writer.write(null, new IIOImage(pngImage, null, null), writeParam);
+            } finally {
+                writer.dispose();
             }
         } catch (Exception e) {
             throw new IOException("Failed to save tile as PNG: " + e.getMessage(), e);
@@ -276,104 +389,94 @@ public class GeoTiffProcessor {
         File tempDir = new File("temp_kmz");
         tempDir.mkdirs();
 
-        StringBuilder kml = new StringBuilder();
-        kml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
-           .append("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
-           .append("  <Document>\n")
-           .append("    <name>Merged GeoTIFF</name>\n")
-           .append("    <description>Generated from ").append(geoTiffFile.getName()).append("</description>\n")
-           .append("    <Style id=\"defaultStyle\">\n")
-           .append("      <IconStyle>\n")
-           .append("        <scale>1.1</scale>\n")
-           .append("      </IconStyle>\n")
-           .append("      <LineStyle>\n")
-           .append("        <width>1.5</width>\n")
-           .append("      </LineStyle>\n")
-           .append("    </Style>\n");
-
-        // Sort tiles by row (Y) and column (X) for proper arrangement (top-left to right, then down)
-        tiles.sort((a, b) -> {
-            if (a.getY() != b.getY()) {
-                return Integer.compare(a.getY(), b.getY()); // Sort by Y first (rows)
-            }
-            return Integer.compare(a.getX(), b.getX()); // Then by X (columns)
-        });
-
-        // Add each tile as a GroundOverlay with proper georeferencing
-        int tileNumber = 0;
-        for (TileInfo tile : tiles) {
-            String imagePath = String.format("tiles/%d.png", tileNumber);
-            
-            // Save tile as PNG with transparency
-            File pngFile = new File(tempDir, imagePath);
-            pngFile.getParentFile().mkdirs();
-            
-            // Ensure alpha channel is preserved
-            BufferedImage pngImage = new BufferedImage(
-                tile.getImage().getWidth(),
-                tile.getImage().getHeight(),
-                BufferedImage.TYPE_INT_ARGB
-            );
-            Graphics2D g = pngImage.createGraphics();
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            
-            // Apply opacity
-            if (tileOpacity < 1.0f) {
-                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, tileOpacity));
-            }
-            
-            g.drawImage(tile.getImage(), 0, 0, null);
-            g.dispose();
-            
-            ImageIO.write(pngImage, "PNG", pngFile);
-
-            // Add GroundOverlay to KML
-            kml.append("    <GroundOverlay>\n")
-               .append("      <name>Tile ").append(tileNumber).append("</name>\n")
-               .append("      <Icon>\n")
-               .append("        <href>").append(imagePath).append("</href>\n")
-               .append("      </Icon>\n")
-               .append("      <LatLonBox>\n")
-               .append("        <north>").append(tile.getBounds()[3]).append("</north>\n")
-               .append("        <south>").append(tile.getBounds()[1]).append("</south>\n")
-               .append("        <east>").append(tile.getBounds()[2]).append("</east>\n")
-               .append("        <west>").append(tile.getBounds()[0]).append("</west>\n")
-               .append("      </LatLonBox>\n")
-               .append("    </GroundOverlay>\n");
-            
-            tileNumber++;
-        }
-
-        kml.append("  </Document>\n")
-           .append("</kml>");
-
-        // Write KML file
-        File kmlFile = new File(tempDir, "doc.kml");
-        Files.writeString(kmlFile.toPath(), kml.toString());
-
-        // Create KMZ file
+        // Create ZIP output stream with maximum compression
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(outputPath))) {
-            // Add KML first
-            addFileToZip(zos, kmlFile, "doc.kml");
+            zos.setLevel(compressionLevel); // Set ZIP compression level
+            
+            StringBuilder kml = new StringBuilder();
+            kml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
+               .append("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
+               .append("  <Document>\n")
+               .append("    <name>TheSpaceLab</name>\n")
+               .append("    <description>Generated from ").append(inputFile.getName()).append("</description>\n")
+               .append("    <Style id=\"defaultStyle\">\n")
+               .append("      <IconStyle>\n")
+               .append("        <scale>1.1</scale>\n")
+               .append("      </IconStyle>\n")
+               .append("      <LineStyle>\n")
+               .append("        <width>1.5</width>\n")
+               .append("      </LineStyle>\n")
+               .append("    </Style>\n");
 
-            // Add all tile images in sorted order
+            // Sort tiles and process them
+            tiles.sort((a, b) -> {
+                if (a.getY() != b.getY()) {
+                    return Integer.compare(a.getY(), b.getY());
+                }
+                return Integer.compare(a.getX(), b.getX());
+            });
+
+            int tileNumber = 0;
+            for (TileInfo tile : tiles) {
+                String imagePath = String.format("tiles/%d.png", tileNumber);
+                File pngFile = new File(tempDir, imagePath);
+                pngFile.getParentFile().mkdirs();
+
+                // Save tile as compressed PNG
+                saveTileAsPNG(tile, pngFile);
+
+                // Add to KML
+                kml.append(createGroundOverlayKML(tile, imagePath, tileNumber++));
+            }
+
+            kml.append("  </Document>\n")
+               .append("</kml>");
+
+            // Add KML to ZIP
+            addToZip(zos, kml.toString().getBytes(), "doc.kml");
+
+            // Add all tiles to ZIP
             File tilesDir = new File(tempDir, "tiles");
             if (tilesDir.exists()) {
                 File[] files = tilesDir.listFiles();
                 if (files != null) {
-                    // Sort files to maintain consistent order
-                    java.util.Arrays.sort(files);
                     for (File file : files) {
                         addFileToZip(zos, file, "tiles/" + file.getName());
                     }
                 }
             }
+        } finally {
+            deleteDirectory(tempDir);
         }
+    }
 
-        // Clean up temporary directory
-        deleteDirectory(tempDir);
+    private String createGroundOverlayKML(TileInfo tile, String imagePath, int tileNumber) {
+        return String.format(
+            "    <GroundOverlay>\n" +
+            "      <name>Tile %d</name>\n" +
+            "      <Icon>\n" +
+            "        <href>%s</href>\n" +
+            "      </Icon>\n" +
+            "      <LatLonBox>\n" +
+            "        <north>%f</north>\n" +
+            "        <south>%f</south>\n" +
+            "        <east>%f</east>\n" +
+            "        <west>%f</west>\n" +
+            "      </LatLonBox>\n" +
+            "    </GroundOverlay>\n",
+            tileNumber,
+            imagePath,
+            tile.getBounds()[3],
+            tile.getBounds()[1],
+            tile.getBounds()[2],
+            tile.getBounds()[0]
+        );
+    }
+
+    private void addToZip(ZipOutputStream zos, byte[] data, String entryPath) throws IOException {
+        zos.putNextEntry(new ZipEntry(entryPath));
+        zos.write(data);
+        zos.closeEntry();
     }
 
     private void addFileToZip(ZipOutputStream zos, File file, String entryPath) throws IOException {
@@ -410,7 +513,7 @@ public class GeoTiffProcessor {
         return targetCRS;
     }
 
-    public Envelope2D getBounds() {
+    public ReferencedEnvelope getBounds() {
         return bounds;
     }
 } 

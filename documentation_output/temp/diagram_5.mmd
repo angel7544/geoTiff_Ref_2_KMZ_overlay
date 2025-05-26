@@ -1,0 +1,60 @@
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#9b59b6', 'secondaryColor': '#1abc9c'}}}%%
+erDiagram
+    GeoTIFF ||--o{ Tile : contains
+    Tile ||--o{ Metadata : has
+    Tile ||--o{ Image : has
+    KMZ ||--o{ Tile : contains
+    KMZ ||--o{ KML : contains
+    
+    GeoTIFF {
+        string filename PK
+        string crs FK
+        int width
+        int height
+        geometry bounds
+        timestamp created_at
+    }
+
+    Tile {
+        int id PK
+        int x
+        int y
+        int width
+        int height
+        geometry bounds
+        float opacity
+    }
+
+    Metadata {
+        int tile_id FK
+        string crs
+        double north
+        double south
+        double east
+        double west
+        json properties
+    }
+
+    Image {
+        int tile_id FK
+        blob data
+        string format
+        int width
+        int height
+        float opacity
+    }
+
+    KML {
+        string id PK
+        string version
+        string description
+        timestamp created_at
+        array overlays
+    }
+
+    style GeoTIFF fill:#9b59b6,stroke:#8e44ad,color:white
+    style Tile fill:#1abc9c,stroke:#16a085,color:white
+    style Metadata fill:#e67e22,stroke:#d35400,color:white
+    style Image fill:#3498db,stroke:#2980b9,color:white
+    style KML fill:#e74c3c,stroke:#c0392b,color:white
