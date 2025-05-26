@@ -397,7 +397,7 @@ public class GeoTiffProcessor {
             kml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
                .append("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
                .append("  <Document>\n")
-               .append("    <name>T</name>\n")
+               .append("    <name>TheSpaceLab</name>\n")
                .append("    <Style id=\"defaultStyle\">\n")
                .append("      <IconStyle>\n")
                .append("        <scale>1.1</scale>\n")

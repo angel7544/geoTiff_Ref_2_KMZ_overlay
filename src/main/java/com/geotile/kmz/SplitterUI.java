@@ -226,6 +226,41 @@ public class SplitterUI extends Application {
         opacitySlider.setShowTickMarks(true);
         opacitySlider.setMajorTickUnit(0.25);
 
+        // Add opacity text input
+        TextField opacityField = new TextField("1.0");
+        opacityField.setPrefWidth(60);
+        opacityField.setMaxWidth(60);
+
+        // Create HBox for opacity controls
+        HBox opacityBox = new HBox(SPACING);
+        opacityBox.setAlignment(Pos.CENTER_LEFT);
+        opacityBox.getChildren().addAll(opacitySlider, opacityField);
+        HBox.setHgrow(opacitySlider, Priority.ALWAYS);
+
+        // Sync slider and text field
+        opacitySlider.valueProperty().addListener((obs, oldVal, newVal) -> {
+            opacityField.setText(String.format("%.2f", newVal.doubleValue()));
+        });
+
+        opacityField.textProperty().addListener((obs, oldVal, newVal) -> {
+            if (!newVal.matches("\\d*\\.?\\d*")) {
+                opacityField.setText(oldVal);
+                return;
+            }
+            try {
+                double value = Double.parseDouble(newVal);
+                if (value >= 0 && value <= 1) {
+                    opacitySlider.setValue(value);
+                } else {
+                    opacityField.setText(oldVal);
+                }
+            } catch (NumberFormatException e) {
+                if (!newVal.isEmpty()) {
+                    opacityField.setText(oldVal);
+                }
+            }
+        });
+
         // Manual Georeferencing Section
         manualGeoreferencingCheckbox = new CheckBox("Manual Georeferencing");
         manualGeoreferencingCheckbox.setSelected(false);
@@ -280,7 +315,7 @@ public class SplitterUI extends Application {
         settingsGrid.add(compressionComboBox, 1, row++);
         
         settingsGrid.add(opacityLabel, 0, row);
-        settingsGrid.add(opacitySlider, 1, row++);
+        settingsGrid.add(opacityBox, 1, row++);
 
         // Add manual georeferencing section
         settingsGrid.add(manualGeoreferencingCheckbox, 0, row++, 2, 1);
