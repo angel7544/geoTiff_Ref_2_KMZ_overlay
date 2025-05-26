@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.zip.Deflater;
+import java.util.Optional;
 
 public class SplitterUI extends Application {
     private File selectedFile;
@@ -627,6 +628,16 @@ public class SplitterUI extends Application {
                     updateUI(() -> statusLabel.setText("Creating KMZ overlay..."));
                     
                     Platform.runLater(() -> {
+                        // First ask for the internal KMZ name
+                        TextInputDialog nameDialog = new TextInputDialog("TheSpaceLab");
+                        nameDialog.setTitle("KMZ Internal Name");
+                        nameDialog.setHeaderText("Enter the internal name for the KMZ file");
+                        nameDialog.setContentText("Internal name:");
+
+                        Optional<String> internalName = nameDialog.showAndWait();
+                        String kmzInternalName = internalName.orElse("TheSpaceLab");
+
+                        // Then show the save file dialog
                         FileChooser fileChooser = new FileChooser();
                         fileChooser.setTitle("Save KMZ Overlay");
                         fileChooser.setInitialDirectory(outputDir);
@@ -638,7 +649,7 @@ public class SplitterUI extends Application {
                         File kmzFile = fileChooser.showSaveDialog(processButton.getScene().getWindow());
                         if (kmzFile != null) {
                             try {
-                                processor.createMergedKMZ(tiles, kmzFile.getPath());
+                                processor.createMergedKMZ(tiles, kmzFile.getPath(), kmzInternalName);
                                 resultMessage.append("KMZ overlay created at: ").append(kmzFile.getPath());
                             } catch (IOException ex) {
                                 resultMessage.append("Error creating KMZ overlay: ").append(ex.getMessage());

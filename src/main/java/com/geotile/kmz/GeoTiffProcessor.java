@@ -385,7 +385,7 @@ public class GeoTiffProcessor {
         return result;
     }
 
-    public void createMergedKMZ(List<TileInfo> tiles, String outputPath) throws IOException {
+    public void createMergedKMZ(List<TileInfo> tiles, String outputPath, String internalName) throws IOException {
         File tempDir = new File("temp_kmz");
         tempDir.mkdirs();
 
@@ -397,8 +397,7 @@ public class GeoTiffProcessor {
             kml.append("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n")
                .append("<kml xmlns=\"http://www.opengis.net/kml/2.2\">\n")
                .append("  <Document>\n")
-               .append("    <name>TheSpaceLab</name>\n")
-               .append("    <description>Generated from ").append(inputFile.getName()).append("</description>\n")
+               .append("    <name>T</name>\n")
                .append("    <Style id=\"defaultStyle\">\n")
                .append("      <IconStyle>\n")
                .append("        <scale>1.1</scale>\n")
@@ -406,9 +405,12 @@ public class GeoTiffProcessor {
                .append("      <LineStyle>\n")
                .append("        <width>1.5</width>\n")
                .append("      </LineStyle>\n")
-               .append("    </Style>\n");
+               .append("    </Style>\n")
+               .append("    <Folder>\n")
+               .append("      <name>").append(internalName).append("</name>\n")
+               .append("      <description>Generated from ").append(inputFile.getName()).append("</description>\n");
 
-            // Sort tiles and process them
+            // Sort tiles by row (Y) and column (X) for proper arrangement
             tiles.sort((a, b) -> {
                 if (a.getY() != b.getY()) {
                     return Integer.compare(a.getY(), b.getY());
@@ -422,14 +424,15 @@ public class GeoTiffProcessor {
                 File pngFile = new File(tempDir, imagePath);
                 pngFile.getParentFile().mkdirs();
 
-                // Save tile as compressed PNG
+                // Save tile as PNG with transparency
                 saveTileAsPNG(tile, pngFile);
 
                 // Add to KML
                 kml.append(createGroundOverlayKML(tile, imagePath, tileNumber++));
             }
 
-            kml.append("  </Document>\n")
+            kml.append("    </Folder>\n")
+               .append("  </Document>\n")
                .append("</kml>");
 
             // Add KML to ZIP
@@ -452,18 +455,18 @@ public class GeoTiffProcessor {
 
     private String createGroundOverlayKML(TileInfo tile, String imagePath, int tileNumber) {
         return String.format(
-            "    <GroundOverlay>\n" +
-            "      <name>Tile %d</name>\n" +
-            "      <Icon>\n" +
-            "        <href>%s</href>\n" +
-            "      </Icon>\n" +
-            "      <LatLonBox>\n" +
-            "        <north>%f</north>\n" +
-            "        <south>%f</south>\n" +
-            "        <east>%f</east>\n" +
-            "        <west>%f</west>\n" +
-            "      </LatLonBox>\n" +
-            "    </GroundOverlay>\n",
+            "        <GroundOverlay>\n" +
+            "          <name>Tile %d</name>\n" +
+            "          <Icon>\n" +
+            "            <href>%s</href>\n" +
+            "          </Icon>\n" +
+            "          <LatLonBox>\n" +
+            "            <north>%f</north>\n" +
+            "            <south>%f</south>\n" +
+            "            <east>%f</east>\n" +
+            "            <west>%f</west>\n" +
+            "          </LatLonBox>\n" +
+            "        </GroundOverlay>\n",
             tileNumber,
             imagePath,
             tile.getBounds()[3],
