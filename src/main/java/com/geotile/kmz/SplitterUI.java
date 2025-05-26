@@ -3,13 +3,15 @@ package com.geotile.kmz;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
+import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
-import javafx.scene.layout.GridPane;
+import javafx.scene.layout.*;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
+import javafx.scene.paint.Color;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,111 +43,230 @@ public class SplitterUI extends Application {
         "EPSG:32646"  // UTM zone 46N
     };
 
+    private static final double WINDOW_SIZE = 600;
+    private static final double PADDING = 10;
+    private static final double SPACING = 8;
+
     public static void main(String[] args) {
         launch(args);
     }
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("GeoTIFF Splitter");
+        primaryStage.setTitle("GeoReferenced Image Splitter 2KMZ Overlay");
 
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(10));
-        grid.setVgap(5);
-        grid.setHgap(5);
+        // Create main layout container
+        VBox mainContainer = new VBox(SPACING);
+        mainContainer.setPadding(new Insets(PADDING));
+        mainContainer.setAlignment(Pos.TOP_CENTER);
+        mainContainer.setFillWidth(true);
 
-        // File selection
-        Button selectFileButton = new Button("Select GeoTIFF");
+        // Create header with title and buttons
+        HBox headerBox = new HBox(SPACING);
+        headerBox.setAlignment(Pos.CENTER_LEFT);
+        headerBox.setMaxWidth(Double.MAX_VALUE);
+
+        Label titleLabel = new Label("GeoImage Split 2KMZ Overlay");
+        titleLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold;");
+        HBox.setHgrow(titleLabel, Priority.ALWAYS);
+
+        // Create header buttons
+        Button helpButton = new Button("Help");
+        helpButton.getStyleClass().add("header-button");
+        helpButton.setOnAction(e -> showHelpDialog(primaryStage));
+
+        Button aboutButton = new Button("About");
+        aboutButton.getStyleClass().add("header-button");
+        aboutButton.setOnAction(e -> showAboutDialog(primaryStage));
+
+        headerBox.getChildren().addAll(titleLabel, helpButton, aboutButton);
+
+        // Create scrollable content
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setFitToWidth(true);
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+
+        VBox contentBox = new VBox(SPACING);
+        contentBox.setAlignment(Pos.TOP_CENTER);
+        contentBox.setFillWidth(true);
+        contentBox.setPadding(new Insets(PADDING, 0, 0, 0));
+        
+        // Add sections to content
+        contentBox.getChildren().addAll(
+            createFileSelectionSection(),
+            createCompactSeparator(),
+            createSettingsSection(),
+            createCompactSeparator(),
+            createProcessSection()
+        );
+
+        scrollPane.setContent(contentBox);
+
+        mainContainer.getChildren().addAll(headerBox, createCompactSeparator(), scrollPane);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
+
+        Scene scene = new Scene(mainContainer, WINDOW_SIZE, WINDOW_SIZE);
+        scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
+
+        // Fix window size
+        primaryStage.setResizable(false);
+        primaryStage.setWidth(WINDOW_SIZE);
+        primaryStage.setHeight(WINDOW_SIZE);
+
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    private VBox createFileSelectionSection() {
+        VBox section = new VBox(SPACING);
+        section.setAlignment(Pos.CENTER);
+        section.setMaxWidth(Double.MAX_VALUE);
+
+        Label sectionTitle = new Label("File Selection");
+        sectionTitle.getStyleClass().add("section-title");
+
+        HBox fileBox = new HBox(SPACING);
+        fileBox.setAlignment(Pos.CENTER);
+        fileBox.setMaxWidth(Double.MAX_VALUE);
+
+        Button selectFileButton = new Button("Select File");
+        selectFileButton.getStyleClass().add("primary-button");
+        selectFileButton.setMaxWidth(150);
+        
         Label fileLabel = new Label("No file selected");
+        fileLabel.getStyleClass().add("file-label");
+        fileLabel.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(fileLabel, Priority.ALWAYS);
+
         selectFileButton.setOnAction(e -> {
             FileChooser fileChooser = new FileChooser();
             fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("GeoTIFF files", "*.tif", "*.tiff")
+                new FileChooser.ExtensionFilter("GeoReferenced Image files", "*.tif", "*.tiff")
             );
-            File file = fileChooser.showOpenDialog(primaryStage);
+            File file = fileChooser.showOpenDialog(null);
             if (file != null) {
                 selectedFile = file;
                 fileLabel.setText(file.getName());
             }
         });
 
-        // Coordinate Reference System selection
+        fileBox.getChildren().addAll(selectFileButton, fileLabel);
+        section.getChildren().addAll(sectionTitle, fileBox);
+        return section;
+    }
+
+    private VBox createSettingsSection() {
+        VBox section = new VBox(SPACING);
+        section.setAlignment(Pos.CENTER);
+        section.setMaxWidth(Double.MAX_VALUE);
+
+        Label sectionTitle = new Label("Settings");
+        sectionTitle.getStyleClass().add("section-title");
+
+        // Create a grid for compact layout
+        GridPane settingsGrid = new GridPane();
+        settingsGrid.setHgap(SPACING);
+        settingsGrid.setVgap(SPACING);
+        settingsGrid.setAlignment(Pos.CENTER);
+        
+        // Column constraints for better organization
+        ColumnConstraints col1 = new ColumnConstraints();
+        ColumnConstraints col2 = new ColumnConstraints();
+        col1.setPercentWidth(30);
+        col2.setPercentWidth(70);
+        settingsGrid.getColumnConstraints().addAll(col1, col2);
+
+        // Add CRS selection
         Label crsLabel = new Label("Target CRS:");
         targetCRSComboBox = new ComboBox<>();
         targetCRSComboBox.getItems().addAll(COMMON_CRS);
-        targetCRSComboBox.setValue(COMMON_CRS[0]); // Default to WGS 84
-
-        // Number of tiles
+        targetCRSComboBox.setValue(COMMON_CRS[0]);
+        targetCRSComboBox.setMaxWidth(Double.MAX_VALUE);
+        
+        // Add tile configuration
         Label tilesXLabel = new Label("Tiles X:");
         tilesXField = new TextField("2");
+        tilesXField.setMaxWidth(Double.MAX_VALUE);
+        
         Label tilesYLabel = new Label("Tiles Y:");
         tilesYField = new TextField("2");
+        tilesYField.setMaxWidth(Double.MAX_VALUE);
 
-        // Output format
+        // Add format selection
         Label formatLabel = new Label("Output Format:");
         fileTypeComboBox = new ComboBox<>();
-        fileTypeComboBox.getItems().addAll("GeoTIFF", "KMZ");
-        fileTypeComboBox.setValue("GeoTIFF");
+        fileTypeComboBox.getItems().addAll("GeoTIFF Tiles", "PNG Tiles");
+        fileTypeComboBox.setValue("GeoTIFF Tiles");
+        fileTypeComboBox.setMaxWidth(Double.MAX_VALUE);
 
-        // Merge option
-        mergeToKmzCheckbox = new CheckBox("Merge tiles into single KMZ");
-        mergeToKmzCheckbox.setSelected(true);
-
-        // Process button
-        Button processButton = new Button("Process");
-        statusLabel = new Label("");
-        
-        processButton.setOnAction(e -> processFile());
-
-        // Layout
-        grid.add(selectFileButton, 0, 0);
-        grid.add(fileLabel, 1, 0, 2, 1);
-        
-        grid.add(crsLabel, 0, 1);
-        grid.add(targetCRSComboBox, 1, 1, 2, 1);
-        
-        grid.add(tilesXLabel, 0, 2);
-        grid.add(tilesXField, 1, 2);
-        grid.add(tilesYLabel, 0, 3);
-        grid.add(tilesYField, 1, 3);
-        
-        grid.add(formatLabel, 0, 4);
-        grid.add(fileTypeComboBox, 1, 4);
-        
         // Add opacity control
-        Label opacityLabel = new Label("Tile Opacity:");
-        opacitySlider = new Slider(0, 1, 1); // min, max, default
+        Label opacityLabel = new Label("Opacity:");
+        opacitySlider = new Slider(0, 1, 1);
+        opacitySlider.setMaxWidth(Double.MAX_VALUE);
         opacitySlider.setShowTickLabels(true);
         opacitySlider.setShowTickMarks(true);
         opacitySlider.setMajorTickUnit(0.25);
-        opacitySlider.setBlockIncrement(0.1);
-        
-        grid.add(opacityLabel, 0, 5);
-        grid.add(opacitySlider, 1, 5);
-        
-        grid.add(mergeToKmzCheckbox, 0, 6, 2, 1);
-        
-        grid.add(processButton, 0, 7);
-        grid.add(statusLabel, 1, 7, 2, 1);
 
-        // Add About button
-        Button aboutButton = new Button("About");
-        aboutButton.setOnAction(e -> showAboutDialog(primaryStage));
-        grid.add(aboutButton, 0, 8);
+        // Add KMZ/KML options
+        mergeToKmzCheckbox = new CheckBox("Create KMZ overlay");
+        mergeToKmzCheckbox.setSelected(true);
+        mergeToKmzCheckbox.setMaxWidth(Double.MAX_VALUE);
 
-        // Add Help button
-        Button helpButton = new Button("Help");
-        helpButton.setOnAction(e -> showHelpDialog(primaryStage));
-        grid.add(helpButton, 1, 8);
+        // Add all components to grid
+        int row = 0;
+        settingsGrid.add(crsLabel, 0, row);
+        settingsGrid.add(targetCRSComboBox, 1, row++);
+        
+        settingsGrid.add(tilesXLabel, 0, row);
+        settingsGrid.add(tilesXField, 1, row++);
+        
+        settingsGrid.add(tilesYLabel, 0, row);
+        settingsGrid.add(tilesYField, 1, row++);
+        
+        settingsGrid.add(formatLabel, 0, row);
+        settingsGrid.add(fileTypeComboBox, 1, row++);
+        
+        settingsGrid.add(opacityLabel, 0, row);
+        settingsGrid.add(opacitySlider, 1, row++);
 
-        Scene scene = new Scene(grid, 400, 350);
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        // Add merge checkbox spanning both columns
+        settingsGrid.add(mergeToKmzCheckbox, 0, row, 2, 1);
+
+        section.getChildren().addAll(sectionTitle, settingsGrid);
+        return section;
+    }
+
+    private VBox createProcessSection() {
+        VBox section = new VBox(SPACING);
+        section.setAlignment(Pos.CENTER);
+        section.setMaxWidth(Double.MAX_VALUE);
+
+        Button processButton = new Button("Process");
+        processButton.getStyleClass().add("process-button");
+        processButton.setMaxWidth(200);
+        processButton.setOnAction(e -> processFile());
+
+        statusLabel = new Label("");
+        statusLabel.getStyleClass().add("status-label");
+        statusLabel.setWrapText(true);
+        statusLabel.setMaxWidth(Double.MAX_VALUE);
+        statusLabel.setMinHeight(40);
+
+        section.getChildren().addAll(processButton, statusLabel);
+        return section;
+    }
+
+    private Separator createCompactSeparator() {
+        Separator separator = new Separator();
+        separator.getStyleClass().add("separator");
+        separator.setMaxWidth(Double.MAX_VALUE);
+        return separator;
     }
 
     private void showAboutDialog(Stage owner) {
         Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle("About GeoTIFF Splitter");
+        dialog.setTitle("About GeoReferenced Image Splitter 2KMZ Overlay");
         dialog.setHeaderText("Developer Information");
         dialog.initOwner(owner);
 
@@ -184,7 +305,7 @@ public class SplitterUI extends Application {
         grid.add(new Label("Support:"), 0, 6);
         TextArea supportInfo = new TextArea(
             "For issues or feature requests:\n" +
-            "1. Email: support@geotiff-tools.com\n" +
+            "1. Email: angelsingh2199@gmail.com\n" +
             "2. Visit our website's support section\n" +
             "3. Create an issue on our GitHub repository"
         );
@@ -201,7 +322,7 @@ public class SplitterUI extends Application {
 
     private void showHelpDialog(Stage owner) {
         Dialog<Void> dialog = new Dialog<>();
-        dialog.setTitle("GeoTIFF Splitter Help");
+        dialog.setTitle("GeoReferenced Image Splitter 2KMZ Overlay Help");
         dialog.setHeaderText("Application Guide");
         dialog.initOwner(owner);
 
@@ -211,7 +332,7 @@ public class SplitterUI extends Application {
         // Overview Tab
         Tab overviewTab = new Tab("Overview");
         TextArea overviewText = new TextArea(
-            "GeoTIFF Splitter is a specialized tool designed for processing large georeferenced images. " +
+            "GeoReferenced Image Splitter 2KMZ Overlay is a specialized tool designed for processing large georeferenced images. " +
             "It helps GIS professionals and researchers work with large-scale geographic data by splitting " +
             "them into manageable tiles while preserving geographic coordinates.\n\n" +
             "The application was created to solve the common problem of handling large GeoTIFF files " +
@@ -347,14 +468,22 @@ public class SplitterUI extends Application {
             // Split into tiles
             List<TileInfo> tiles = processor.splitIntoTiles(tilesX, tilesY, outputDir);
 
+            StringBuilder resultMessage = new StringBuilder();
+            resultMessage.append("Processing complete.\n");
+
+            // Save tiles in selected format
+            String format = fileTypeComboBox.getValue();
+            File tilesDir = new File(outputDir, "tiles");
+            resultMessage.append("Tiles saved to: ").append(tilesDir.getPath()).append("\n");
+
             // Create KMZ if requested
-            if (fileTypeComboBox.getValue().equals("KMZ") && mergeToKmzCheckbox.isSelected()) {
-                String kmzPath = new File(outputDir, "merged.kmz").getPath();
+            if (mergeToKmzCheckbox.isSelected()) {
+                String kmzPath = new File(outputDir, "overlay.kmz").getPath();
                 processor.createMergedKMZ(tiles, kmzPath);
-                statusLabel.setText("Processing complete. Tiles saved to output/tiles and KMZ file created.");
-            } else {
-                statusLabel.setText("Processing complete. Tiles saved to output/tiles directory.");
+                resultMessage.append("KMZ overlay created at: ").append(kmzPath);
             }
+
+            statusLabel.setText(resultMessage.toString());
 
         } catch (NumberFormatException e) {
             statusLabel.setText("Invalid number of tiles");

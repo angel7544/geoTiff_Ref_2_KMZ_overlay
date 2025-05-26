@@ -284,6 +284,12 @@ public class GeoTiffProcessor {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // Apply opacity
+            if (tileOpacity < 1.0f) {
+                g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, tileOpacity));
+            }
+            
             g.drawImage(tile.getImage(), 0, 0, null);
             g.dispose();
             
