@@ -87,7 +87,7 @@ public class GeoTiffProcessor {
         this.tileOpacity = Math.max(0.0f, Math.min(1.0f, opacity));
     }
 
-    public List<TileInfo> splitIntoTiles(int numTilesX, int numTilesY, File outputDir) throws IOException {
+    public List<TileInfo> splitIntoTiles(int numTilesX, int numTilesY, File outputDir, String outputFormat) throws IOException {
         if (coverage == null) {
             throw new IllegalStateException("Must call process() first");
         }
@@ -159,9 +159,15 @@ public class GeoTiffProcessor {
                     TileInfo tile = new TileInfo(tileImage, new double[]{minX, minY, maxX, maxY}, x, y);
                     tiles.add(tile);
 
-                    // Save individual tile as GeoTIFF
-                    File tileFile = new File(tilesDir, String.format("tile_%d_%d.tif", x, y));
-                    saveTileAsGeoTIFF(tile, tileFile);
+                    // Save tile based on output format
+                    String extension = outputFormat.equalsIgnoreCase("PNG") ? "png" : "tif";
+                    File tileFile = new File(tilesDir, String.format("tile_%d_%d.%s", x, y, extension));
+                    
+                    if (outputFormat.equalsIgnoreCase("PNG")) {
+                        saveTileAsPNG(tile, tileFile);
+                    } else {
+                        saveTileAsGeoTIFF(tile, tileFile);
+                    }
 
                     tileNumber++;
                 }
@@ -209,6 +215,34 @@ public class GeoTiffProcessor {
             }
         } catch (Exception e) {
             throw new IOException("Failed to save tile as GeoTIFF: " + e.getMessage(), e);
+        }
+    }
+
+    private void saveTileAsPNG(TileInfo tile, File outputFile) throws IOException {
+        try {
+            // Create a new BufferedImage with alpha support
+            BufferedImage pngImage = new BufferedImage(
+                tile.getImage().getWidth(),
+                tile.getImage().getHeight(),
+                BufferedImage.TYPE_INT_ARGB
+            );
+            
+            // Set up graphics context with high quality rendering
+            Graphics2D g = pngImage.createGraphics();
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            
+            // Draw the tile image
+            g.drawImage(tile.getImage(), 0, 0, null);
+            g.dispose();
+            
+            // Write the PNG file
+            if (!ImageIO.write(pngImage, "PNG", outputFile)) {
+                throw new IOException("Failed to write PNG file: " + outputFile.getPath());
+            }
+        } catch (Exception e) {
+            throw new IOException("Failed to save tile as PNG: " + e.getMessage(), e);
         }
     }
 

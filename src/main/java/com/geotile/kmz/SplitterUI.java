@@ -465,16 +465,20 @@ public class SplitterUI extends Application {
             float opacity = (float) opacitySlider.getValue();
             processor.setTileOpacity(opacity);
 
-            // Split into tiles
-            List<TileInfo> tiles = processor.splitIntoTiles(tilesX, tilesY, outputDir);
+            // Get output format
+            String outputFormat = fileTypeComboBox.getValue().startsWith("PNG") ? "PNG" : "GeoTIFF";
+
+            // Split into tiles with specified format
+            List<TileInfo> tiles = processor.splitIntoTiles(tilesX, tilesY, outputDir, outputFormat);
 
             StringBuilder resultMessage = new StringBuilder();
             resultMessage.append("Processing complete.\n");
 
-            // Save tiles in selected format
-            String format = fileTypeComboBox.getValue();
+            // Add format-specific message
             File tilesDir = new File(outputDir, "tiles");
-            resultMessage.append("Tiles saved to: ").append(tilesDir.getPath()).append("\n");
+            resultMessage.append(String.format("Tiles saved as %s to: %s\n", 
+                outputFormat.equals("PNG") ? "PNG files" : "GeoTIFF files",
+                tilesDir.getPath()));
 
             // Create KMZ if requested
             if (mergeToKmzCheckbox.isSelected()) {
