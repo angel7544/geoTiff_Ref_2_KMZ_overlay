@@ -23,6 +23,7 @@ public class SplitterUI extends Application {
     private ComboBox<String> targetCRSComboBox;
     private CheckBox mergeToKmzCheckbox;
     private Label statusLabel;
+    private Slider opacitySlider;
 
     private static final String[] COMMON_CRS = {
         "EPSG:4326",  // WGS 84
@@ -104,10 +105,21 @@ public class SplitterUI extends Application {
         grid.add(formatLabel, 0, 4);
         grid.add(fileTypeComboBox, 1, 4);
         
-        grid.add(mergeToKmzCheckbox, 0, 5, 2, 1);
+        // Add opacity control
+        Label opacityLabel = new Label("Tile Opacity:");
+        opacitySlider = new Slider(0, 1, 1); // min, max, default
+        opacitySlider.setShowTickLabels(true);
+        opacitySlider.setShowTickMarks(true);
+        opacitySlider.setMajorTickUnit(0.25);
+        opacitySlider.setBlockIncrement(0.1);
         
-        grid.add(processButton, 0, 6);
-        grid.add(statusLabel, 1, 6, 2, 1);
+        grid.add(opacityLabel, 0, 5);
+        grid.add(opacitySlider, 1, 5);
+        
+        grid.add(mergeToKmzCheckbox, 0, 6, 2, 1);
+        
+        grid.add(processButton, 0, 7);
+        grid.add(statusLabel, 1, 7, 2, 1);
 
         Scene scene = new Scene(grid, 400, 300);
         primaryStage.setScene(scene);
@@ -142,6 +154,10 @@ public class SplitterUI extends Application {
             if (targetCRSCode != null && !targetCRSCode.isEmpty()) {
                 processor.setTargetCRS(CRS.decode(targetCRSCode));
             }
+
+            // Get opacity value
+            float opacity = (float) opacitySlider.getValue();
+            processor.setTileOpacity(opacity);
 
             // Split into tiles
             List<TileInfo> tiles = processor.splitIntoTiles(tilesX, tilesY, outputDir);

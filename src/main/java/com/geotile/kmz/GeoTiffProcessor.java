@@ -31,6 +31,7 @@ public class GeoTiffProcessor {
     private Envelope2D bounds;
     private CoordinateReferenceSystem sourceCRS;
     private CoordinateReferenceSystem targetCRS;
+    private float tileOpacity = 1.0f;
 
     public GeoTiffProcessor(File geoTiffFile) {
         this.geoTiffFile = geoTiffFile;
@@ -80,6 +81,10 @@ public class GeoTiffProcessor {
             throw new IllegalStateException("Must call process() first");
         }
         this.targetCRS = crs;
+    }
+
+    public void setTileOpacity(float opacity) {
+        this.tileOpacity = Math.max(0.0f, Math.min(1.0f, opacity));
     }
 
     public List<TileInfo> splitIntoTiles(int numTilesX, int numTilesY, File outputDir) throws IOException {
@@ -135,61 +140,54 @@ public class GeoTiffProcessor {
                     int startY = y * tileHeight;
 
                     // Create tile image with transparency support
-                    BufferedImage tileImage = new BufferedImage(currentTileWidth, currentTileHeight, BufferedImage.TYPE_INT_ARGB);
-                    Graphics2D g2d = tileImage.createGraphics();
-                    g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-                    g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-                    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                    g2d.drawImage(sourceBuffered.getSubimage(startX, startY, currentTileWidth, currentTileHeight), 0, 0, null);
-                    g2d.dispose();
+                    BufferedImage tileImage = sourceBuffered.getSubimage(startX, startY, currentTileWidth, currentTileHeight);
+                    
+                    // Apply opacity to the tile
+                    tileImage = applyOpacity(tileImage);
 
-                    // Calculate geographic bounds for this tile - fixed to maintain exact coordinates
+                    // Calculate geographic bounds for this tile
                     double minX = bounds.getMinX() + (x * tileGeoWidth);
                     double maxX = (x == numTilesX - 1) ? bounds.getMaxX() : minX + tileGeoWidth;
-                    // For Y coordinates, we need to calculate from top to bottom for proper alignment
                     double maxY = bounds.getMaxY() - (y * tileGeoHeight);
                     double minY = (y == numTilesY - 1) ? bounds.getMinY() : maxY - tileGeoHeight;
 
-                    // Transform coordinates if needed
-                    ReferencedEnvelope tileEnvelope;
-                    if (transform != null) {
-                        double[] srcPts = new double[] {minX, minY, maxX, maxY};
-                        double[] dstPts = new double[4];
-                        transform.transform(srcPts, 0, dstPts, 0, 2);
-                        tileEnvelope = new ReferencedEnvelope(
-                            Math.min(dstPts[0], dstPts[2]), Math.max(dstPts[0], dstPts[2]),
-                            Math.min(dstPts[1], dstPts[3]), Math.max(dstPts[1], dstPts[3]),
-                            targetCRS
-                        );
-                    } else {
-                        tileEnvelope = new ReferencedEnvelope(minX, maxX, minY, maxY, targetCRS);
-                    }
-
-                    // Create georeferenced coverage for this tile
-                    GridCoverage2D tileCoverage = gcf.create("Tile_" + tileNumber, tileImage, tileEnvelope);
-
-                    // Save as GeoTIFF with sequential numbering
-                    File outputFile = new File(outputDir, String.format("%d.tiff", tileNumber));
-                    GeoTiffWriter writer = new GeoTiffWriter(outputFile);
-                    try {
-                        writer.write(tileCoverage, null);
-                    } finally {
-                        writer.dispose();
-                    }
-
-                    double[] tileBounds = new double[] {
-                        tileEnvelope.getMinX(), tileEnvelope.getMinY(),
-                        tileEnvelope.getMaxX(), tileEnvelope.getMaxY()
-                    };
-                    tiles.add(new TileInfo(tileImage, outputFile, tileBounds, x, y));
+                    // Create tile info
+                    TileInfo tile = new TileInfo(tileImage, new double[]{minX, minY, maxX, maxY}, x, y);
+                    tiles.add(tile);
                     tileNumber++;
                 }
             }
 
             return tiles;
-        } catch (FactoryException | TransformException e) {
+        } catch (FactoryException e) {
             throw new IOException("Error transforming coordinates", e);
         }
+    }
+
+    private BufferedImage applyOpacity(BufferedImage source) {
+        if (tileOpacity >= 1.0f) {
+            return source;
+        }
+
+        int width = source.getWidth();
+        int height = source.getHeight();
+        
+        // Create a new buffered image with alpha support
+        BufferedImage result = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+        
+        // Create graphics context for the new image
+        Graphics2D g2d = result.createGraphics();
+        try {
+            // Set up alpha composite
+            g2d.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, tileOpacity));
+            
+            // Draw the original image with the opacity setting
+            g2d.drawImage(source, 0, 0, null);
+        } finally {
+            g2d.dispose();
+        }
+        
+        return result;
     }
 
     public void createMergedKMZ(List<TileInfo> tiles, String outputPath) throws IOException {
