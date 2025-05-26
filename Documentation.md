@@ -18,40 +18,43 @@ GeoReferenced Image Splitter 2KMZ Overlay is a specialized Java application desi
 
 ## Features
 
+### Core Features
 - **Image Splitting**: Split large GeoTIFF files into smaller, manageable tiles
 - **Coordinate Preservation**: Maintain geographic coordinates and projections
-- **Multiple Output Formats**: Generate tiles in GeoTIFF or PNG format
+- **Multiple Output Formats**: Generate tiles in GeoTIFF or PNG format with transparency support
 - **KMZ Generation**: Create Google Earth compatible KMZ overlays
-- **Opacity Control**: Adjust tile transparency
+- **Opacity Control**: Adjust tile transparency (0-100%)
 - **Flexible Tiling**: Customize the number of tiles in X and Y directions
 - **CRS Support**: Multiple coordinate reference systems supported
-- **Modern UI**: User-friendly JavaFX interface
+- **Modern UI**: User-friendly JavaFX interface (600x600 pixels)
+
+### Recent Enhancements
+- **PNG Output Support**: Full implementation of PNG tile generation with transparency
+- **Improved UI Layout**: Optimized 600x600 pixel window with non-resizable design
+- **Enhanced Header**: Relocated Help and About buttons to application header
+- **Better Status Messages**: More detailed processing feedback and file locations
+- **Improved Error Handling**: Better error messages and exception handling
+- **Documentation Updates**: Comprehensive technical documentation with diagrams
 
 ## Components
 
 ### 1. User Interface (`SplitterUI.java`)
-- **Main Window**: 600x600 pixel window with organized sections
-- **File Selection**: Choose input GeoTIFF files
-- **Settings Panel**: Configure processing parameters
-- **Status Display**: Real-time processing feedback
+- **Main Window**: Fixed 600x600 pixel window with organized sections
+- **Header Section**: Title and navigation buttons (Help, About)
+- **File Selection**: GeoTIFF file chooser with extension filtering
+- **Settings Panel**: Comprehensive configuration options
+- **Status Display**: Detailed processing feedback
 - **Help & About**: Documentation and developer information
 
 ### 2. GeoTIFF Processor (`GeoTiffProcessor.java`)
-- Handles reading and processing of GeoTIFF files
-- Manages coordinate transformations
-- Implements tile generation algorithms
-- Creates KMZ overlays with proper georeferencing
-
-### 3. Tile Management (`TileInfo.java`)
-- Stores tile metadata and image data
-- Manages tile coordinates and bounds
-- Handles tile organization and sorting
-
-### 4. KMZ Generation (`createMergedKMZ` method)
-- Creates KML structure for geographic overlays
-- Manages image transparency and quality
-- Handles file compression and organization
-- Preserves geographic metadata
+- **File Processing**: Handles reading and processing of GeoTIFF files
+- **Coordinate Management**: Manages coordinate transformations and CRS
+- **Tile Generation**: Implements tile generation with format selection
+- **Format Support**: 
+  * GeoTIFF output with preserved georeferencing
+  * PNG output with transparency support
+  * KMZ overlay generation
+- **Quality Settings**: High-quality image processing with antialiasing
 
 ## Dependencies
 
@@ -81,52 +84,85 @@ GeoReferenced Image Splitter 2KMZ Overlay is a specialized Java application desi
 
 ## Processing Pipeline
 
-1. **File Loading**
-   - Read GeoTIFF input file
-   - Extract coordinate reference system
-   - Load image data and metadata
+### 1. File Loading and Validation
+```java
+public void process() throws IOException {
+    // Initialize EPSG database
+    System.setProperty("org.geotools.referencing.forceXY", "true");
+    
+    // Reset CRS factory and create reader
+    CRS.reset("all");
+    GeoTiffReader reader = new GeoTiffReader(geoTiffFile);
+    
+    // Extract essential information
+    coverage = reader.read(null);
+    bounds = coverage.getEnvelope2D();
+    sourceCRS = coverage.getCoordinateReferenceSystem();
+}
+```
 
-2. **Coordinate Processing**
-   - Identify source CRS
-   - Transform coordinates if needed
-   - Calculate tile boundaries
+### 2. Tile Generation Process
+```java
+public List<TileInfo> splitIntoTiles(int numTilesX, int numTilesY, File outputDir, String outputFormat) {
+    // Calculate dimensions
+    int tileWidth = (int) Math.ceil((double) fullWidth / numTilesX);
+    int tileHeight = (int) Math.ceil((double) fullHeight / numTilesY);
 
-3. **Image Splitting**
-   - Calculate tile dimensions
-   - Create tile grid
-   - Process each tile while preserving georeferencing
-   - Apply opacity settings
+    // Process each tile
+    for (int y = 0; y < numTilesY; y++) {
+        for (int x = 0; x < numTilesX; x++) {
+            // Create and process tile
+            BufferedImage tileImage = createTile(x, y);
+            tileImage = applyOpacity(tileImage);
 
-4. **Output Generation**
-   - Save tiles in selected format
-   - Generate KMZ overlay if requested
-   - Organize output files
+            // Save in selected format
+            if (outputFormat.equalsIgnoreCase("PNG")) {
+                saveTileAsPNG(tile, tileFile);
+            } else {
+                saveTileAsGeoTIFF(tile, tileFile);
+            }
+        }
+    }
+}
+```
 
-## User Interface Guide
+### 3. Format-Specific Processing
 
-### Settings Section
-1. **Target CRS**
-   - Choose from common coordinate systems
-   - Supports EPSG:4326 (WGS 84)
-   - Web Mercator and UTM zones available
+#### GeoTIFF Output
+```java
+private void saveTileAsGeoTIFF(TileInfo tile, File outputFile) {
+    // Create grid coverage with georeferencing
+    GridCoverage2D tileCoverage = createGridCoverage(tile);
+    
+    // Write GeoTIFF with preserved coordinates
+    GeoTiffWriter writer = new GeoTiffWriter(outputFile);
+    writer.write(tileCoverage, null);
+}
+```
 
-2. **Tile Configuration**
-   - Set number of tiles in X direction
-   - Set number of tiles in Y direction
-   - Automatically calculates optimal tile sizes
-
-3. **Output Format**
-   - GeoTIFF Tiles: Preserves geographic information
-   - PNG Tiles: Lightweight, suitable for web use
-
-4. **Opacity Control**
-   - Adjust transparency from 0-100%
-   - Applied to both tiles and KMZ overlay
-
-5. **KMZ Options**
-   - Create KMZ overlay for Google Earth
-   - Combines all tiles into single overlay
-   - Preserves geographic positioning
+#### PNG Output
+```java
+private void saveTileAsPNG(TileInfo tile, File outputFile) {
+    // Create high-quality PNG with alpha support
+    BufferedImage pngImage = new BufferedImage(
+        tile.getImage().getWidth(),
+        tile.getImage().getHeight(),
+        BufferedImage.TYPE_INT_ARGB
+    );
+    
+    // Apply high-quality rendering settings
+    Graphics2D g = pngImage.createGraphics();
+    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, 
+                       RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+    g.setRenderingHint(RenderingHints.KEY_RENDERING, 
+                       RenderingHints.VALUE_RENDER_QUALITY);
+    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
+                       RenderingHints.VALUE_ANTIALIAS_ON);
+    
+    // Save PNG with transparency
+    ImageIO.write(pngImage, "PNG", outputFile);
+}
+```
 
 ## Output Formats
 
@@ -135,235 +171,71 @@ GeoReferenced Image Splitter 2KMZ Overlay is a specialized Java application desi
 - Preserves geographic metadata
 - Suitable for GIS applications
 - Full quality preservation
+- Ideal for further GIS processing
 
 ### 2. PNG Tiles
 - Lightweight image format
-- Supports transparency
+- Full transparency support
+- High-quality rendering
+- Bilinear interpolation
+- Anti-aliasing enabled
 - Web-friendly format
 - Reduced file size
+- Suitable for web mapping
 
 ### 3. KMZ Overlay
 - Google Earth compatible
 - Contains all tiles properly positioned
 - Includes transparency settings
+- Preserves geographic coordinates
 - Easy to share and view
+- Automatic tile organization
 
 ## Best Practices
 
-1. **Input Files**
-   - Use properly georeferenced GeoTIFF files
-   - Ensure input file has valid CRS information
-   - Verify file permissions
+### 1. Input Files
+- Use properly georeferenced GeoTIFF files
+- Ensure input file has valid CRS information
+- Verify file permissions
+- Check file size and memory availability
 
-2. **Tile Settings**
-   - Choose tile numbers based on image size
-   - Consider memory limitations
-   - Balance between tile size and quantity
+### 2. Output Selection
+- Choose GeoTIFF for preserving geographic data
+- Use PNG for web applications or when transparency is needed
+- Enable KMZ generation for Google Earth visualization
+- Consider file size requirements
 
-3. **Output Management**
-   - Organize output in separate directories
-   - Use meaningful file names
-   - Backup original files
+### 3. Performance Optimization
+- Balance tile numbers with system memory
+- Consider output format based on use case
+- Use appropriate CRS for your region
+- Monitor processing resources
+
+### 4. Quality Settings
+- Adjust opacity as needed (0-100%)
+- Use antialiasing for better visual quality
+- Enable high-quality rendering for important outputs
+- Verify output quality before large batch processing
 
 ## Technical Details
 
-### GeoTIFF Processing and KMZ Generation
+### 1. Image Processing
+- Bilinear interpolation for smooth scaling
+- Alpha channel support for transparency
+- High-quality rendering pipeline
+- Memory-efficient tile processing
 
-#### 1. GeoTIFF Reading and Analysis
-```java
-// Initial processing of GeoTIFF file
-public void process() {
-    // Initialize EPSG database and CRS handling
-    System.setProperty("org.geotools.referencing.forceXY", "true");
-    GeoTiffReader reader = new GeoTiffReader(geoTiffFile);
-    
-    // Extract essential geographic information
-    coverage = reader.read(null);
-    bounds = coverage.getEnvelope2D();
-    sourceCRS = coverage.getCoordinateReferenceSystem();
-}
-```
+### 2. Geographic Handling
+- Precise coordinate transformation
+- CRS preservation and conversion
+- Accurate boundary calculations
+- Proper georeferencing in outputs
 
-#### 2. Tile Generation Process
-1. **Image Analysis**
-   - Read source GeoTIFF dimensions
-   - Calculate optimal tile sizes
-   - Determine geographic bounds
-   ```java
-   int fullWidth = sourceImage.getWidth();
-   int fullHeight = sourceImage.getHeight();
-   int tileWidth = (int) Math.ceil((double) fullWidth / numTilesX);
-   int tileHeight = (int) Math.ceil((double) fullHeight / numTilesY);
-   ```
-
-2. **Geographic Calculations**
-   - Calculate geographic dimensions for each tile
-   - Preserve coordinate reference system
-   ```java
-   double fullGeoWidth = bounds.getMaxX() - bounds.getMinX();
-   double fullGeoHeight = bounds.getMaxY() - bounds.getMinY();
-   double tileGeoWidth = fullGeoWidth / numTilesX;
-   double tileGeoHeight = fullGeoHeight / numTilesY;
-   ```
-
-3. **Tile Creation**
-   - Extract tile images
-   - Apply transparency settings
-   - Preserve geographic metadata
-   ```java
-   BufferedImage tileImage = sourceBuffered.getSubimage(
-       startX, startY, currentTileWidth, currentTileHeight
-   );
-   tileImage = applyOpacity(tileImage);
-   ```
-
-#### 3. KMZ Generation Process
-
-1. **KML Structure Creation**
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<kml xmlns="http://www.opengis.net/kml/2.2">
-  <Document>
-    <name>Merged GeoTIFF</name>
-    <description>Generated from source.tif</description>
-    <GroundOverlay>
-      <name>Tile 0</name>
-      <Icon>
-        <href>tiles/0.png</href>
-      </Icon>
-      <LatLonBox>
-        <north>latitude_north</north>
-        <south>latitude_south</south>
-        <east>longitude_east</east>
-        <west>longitude_west</west>
-      </LatLonBox>
-    </GroundOverlay>
-    <!-- Additional tiles... -->
-  </Document>
-</kml>
-```
-
-2. **Tile Processing for KMZ**
-   - Convert tiles to PNG format
-   - Apply opacity settings
-   - Organize in temporary directory
-   ```java
-   // Create PNG with transparency
-   BufferedImage pngImage = new BufferedImage(
-       tile.getWidth(),
-       tile.getHeight(),
-       BufferedImage.TYPE_INT_ARGB
-   );
-   
-   // Apply opacity if needed
-   if (tileOpacity < 1.0f) {
-       g.setComposite(AlphaComposite.getInstance(
-           AlphaComposite.SRC_OVER, 
-           tileOpacity
-       ));
-   }
-   ```
-
-3. **KMZ File Assembly**
-   - Create ZIP structure
-   - Add KML document
-   - Include processed tiles
-   ```java
-   try (ZipOutputStream zos = new ZipOutputStream(
-       new FileOutputStream(outputPath)
-   )) {
-       // Add KML first
-       addFileToZip(zos, kmlFile, "doc.kml");
-       
-       // Add tile images
-       for (File file : tileFiles) {
-           addFileToZip(
-               zos, 
-               file, 
-               "tiles/" + file.getName()
-           );
-       }
-   }
-   ```
-
-#### 4. Overlay Options and Settings
-
-1. **Opacity Control**
-   - User-defined transparency (0-100%)
-   - Applied at both tile and KMZ level
-   ```java
-   public void setTileOpacity(float opacity) {
-       this.tileOpacity = Math.max(0.0f, Math.min(1.0f, opacity));
-   }
-   ```
-
-2. **Geographic Positioning**
-   - Precise coordinate mapping
-   - Automatic tile arrangement
-   ```java
-   // Calculate tile bounds
-   double minX = bounds.getMinX() + (x * tileGeoWidth);
-   double maxX = minX + tileGeoWidth;
-   double maxY = bounds.getMaxY() - (y * tileGeoHeight);
-   double minY = maxY - tileGeoHeight;
-   ```
-
-3. **Quality Settings**
-   - High-quality image processing
-   - Bilinear interpolation
-   - Anti-aliasing
-   ```java
-   Graphics2D g = pngImage.createGraphics();
-   g.setRenderingHint(
-       RenderingHints.KEY_INTERPOLATION, 
-       RenderingHints.VALUE_INTERPOLATION_BILINEAR
-   );
-   g.setRenderingHint(
-       RenderingHints.KEY_RENDERING, 
-       RenderingHints.VALUE_RENDER_QUALITY
-   );
-   g.setRenderingHint(
-       RenderingHints.KEY_ANTIALIASING, 
-       RenderingHints.VALUE_ANTIALIAS_ON
-   );
-   ```
-
-#### 5. Output Organization
-
-1. **Directory Structure**
-```
-output/
-├── tiles/           # Individual tile storage
-│   ├── tile_0_0.tif # Original format tiles
-│   └── tile_0_1.tif
-├── temp_kmz/        # Temporary processing
-│   ├── doc.kml      # KML document
-│   └── tiles/       # PNG versions for KMZ
-└── overlay.kmz      # Final KMZ output
-```
-
-2. **File Naming Convention**
-- Tiles: `tile_row_column.extension`
-- KMZ: `overlay.kmz`
-- Internal KMZ structure preserved
-
-## Developer Information
-
-- **Developer**: Angel (Mehul) Singh
-- **Email**: angelsingh2199@gmail.com
-- **Company**: BR31 - Technologies Pvt. Ltd.
-- **Website**: https://br31tech.com
-- **LinkedIn**: https://linkedin.com/in/angel3002
-
-## Support and Updates
-
-The application is actively maintained and supported. For issues, feature requests, or contributions:
-1. Contact developer via email
-2. Visit the company website
-3. Create issues on the GitHub repository
-4. Check for regular updates
-
-This documentation provides a comprehensive overview of the application's capabilities, components, and usage. For specific technical questions or support, please contact the development team.
+### 3. Error Handling
+- Comprehensive input validation
+- Detailed error messages
+- Graceful failure handling
+- User-friendly status updates
 
 ## Application Architecture and Diagrams
 
@@ -689,3 +561,21 @@ The diagrams use Mermaid's advanced features:
 - Advanced layouts
 
 Each diagram is now more visually appealing and easier to understand while maintaining its technical accuracy. 
+
+## Developer Information
+
+- **Developer**: Angel (Mehul) Singh
+- **Email**: angelsingh2199@gmail.com
+- **Company**: BR31 - Technologies Pvt. Ltd.
+- **Website**: https://br31tech.com
+- **LinkedIn**: https://linkedin.com/in/angel3002
+
+## Support and Updates
+
+The application is actively maintained and supported. For issues, feature requests, or contributions:
+1. Contact developer via email
+2. Visit the company website
+3. Create issues on the GitHub repository
+4. Check for regular updates
+
+This documentation provides a comprehensive overview of the application's capabilities, recent improvements, and technical details. For specific questions or support, please contact the development team. 
