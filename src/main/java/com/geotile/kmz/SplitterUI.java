@@ -166,9 +166,9 @@ public class SplitterUI extends Application {
             if (fileTypeComboBox.getValue().equals("KMZ") && mergeToKmzCheckbox.isSelected()) {
                 String kmzPath = new File(outputDir, "merged.kmz").getPath();
                 processor.createMergedKMZ(tiles, kmzPath);
-                statusLabel.setText("Processing complete. KMZ file created.");
+                statusLabel.setText("Processing complete. Tiles saved to output/tiles and KMZ file created.");
             } else {
-                statusLabel.setText("Processing complete. Tiles created.");
+                statusLabel.setText("Processing complete. Tiles saved to output/tiles directory.");
             }
 
         } catch (NumberFormatException e) {

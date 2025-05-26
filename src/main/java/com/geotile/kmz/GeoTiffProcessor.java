@@ -92,6 +92,10 @@ public class GeoTiffProcessor {
             throw new IllegalStateException("Must call process() first");
         }
 
+        // Create output directories
+        File tilesDir = new File(outputDir, "tiles");
+        tilesDir.mkdirs();
+
         try {
             // Get transform between source and target CRS if they're different
             MathTransform transform = null;
@@ -154,13 +158,57 @@ public class GeoTiffProcessor {
                     // Create tile info
                     TileInfo tile = new TileInfo(tileImage, new double[]{minX, minY, maxX, maxY}, x, y);
                     tiles.add(tile);
+
+                    // Save individual tile as GeoTIFF
+                    File tileFile = new File(tilesDir, String.format("tile_%d_%d.tif", x, y));
+                    saveTileAsGeoTIFF(tile, tileFile);
+
                     tileNumber++;
                 }
             }
 
             return tiles;
-        } catch (FactoryException e) {
-            throw new IOException("Error transforming coordinates", e);
+        } catch (Exception e) {
+            throw new IOException("Error processing tiles", e);
+        }
+    }
+
+    private void saveTileAsGeoTIFF(TileInfo tile, File outputFile) throws IOException {
+        try {
+            // Create a new GridCoverage for the tile
+            GridCoverageFactory gcf = new GridCoverageFactory();
+            
+            // Calculate the world-to-grid transform for this tile
+            double[] bounds = tile.getBounds();
+            double scaleX = (bounds[2] - bounds[0]) / tile.getImage().getWidth();
+            double scaleY = (bounds[3] - bounds[1]) / tile.getImage().getHeight();
+            
+            AffineTransform2D worldToGrid = new AffineTransform2D(
+                scaleX, 0.0,
+                0.0, -scaleY,
+                bounds[0], bounds[3]
+            );
+
+            // Create the grid coverage
+            GridCoverage2D tileCoverage = gcf.create(
+                "Tile_" + tile.getX() + "_" + tile.getY(),
+                tile.getImage(),
+                new ReferencedEnvelope(
+                    bounds[0], bounds[2],
+                    bounds[1], bounds[3],
+                    targetCRS
+                )
+            );
+
+            // Write the GeoTIFF
+            GeoTiffWriter writer = new GeoTiffWriter(outputFile);
+            try {
+                writer.write(tileCoverage, null);
+            } finally {
+                writer.dispose();
+            }
+        } catch (Exception e) {
+            throw new IOException("Failed to save tile as GeoTIFF: " + e.getMessage(), e);
         }
     }
 
