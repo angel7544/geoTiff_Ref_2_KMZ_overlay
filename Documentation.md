@@ -1,581 +1,391 @@
-# GeoReferenced Image Splitter 2KMZ Overlay Documentation
-
-## Table of Contents
-1. [Overview](#overview)
-2. [Features](#features)
-3. [Components](#components)
-4. [Dependencies](#dependencies)
-5. [Processing Pipeline](#processing-pipeline)
-6. [User Interface Guide](#user-interface-guide)
-7. [Output Formats](#output-formats)
-8. [Best Practices](#best-practices)
-9. [Technical Details](#technical-details)
-10. [Application Architecture and Diagrams](#application-architecture-and-diagrams)
+# GeoImage Split 2KMZ Overlay Documentation
 
 ## Overview
 
-GeoReferenced Image Splitter 2KMZ Overlay is a specialized Java application designed for processing and splitting large georeferenced images (GeoTIFF) into manageable tiles while preserving geographic coordinates. The application provides options to output tiles in different formats and create KMZ overlays for visualization in Google Earth and other GIS applications.
+GeoImage Split 2KMZ Overlay is a specialized Java-based application designed for processing large georeferenced images. It helps GIS professionals and researchers work with large-scale geographic data by splitting them into manageable tiles while preserving geographic coordinates. The application features an intuitive interface with smart coordinate handling, automated calculations, and comprehensive process control capabilities.
 
-## Features
+## System Architecture
 
-### Core Features
-- **Image Splitting**: Split large GeoTIFF files into smaller, manageable tiles
-- **Coordinate Preservation**: Maintain geographic coordinates and projections
-- **Multiple Output Formats**: Generate tiles in GeoTIFF or PNG format with transparency support
-- **KMZ Generation**: Create Google Earth compatible KMZ overlays
-- **Opacity Control**: Adjust tile transparency (0-100%)
-- **Flexible Tiling**: Customize the number of tiles in X and Y directions
-- **CRS Support**: Multiple coordinate reference systems supported
-- **Modern UI**: User-friendly JavaFX interface (600x600 pixels)
+### High-Level Architecture
 
-### Recent Enhancements
-- **PNG Output Support**: Full implementation of PNG tile generation with transparency
-- **Improved UI Layout**: Optimized 600x600 pixel window with non-resizable design
-- **Enhanced Header**: Relocated Help and About buttons to application header
-- **Better Status Messages**: More detailed processing feedback and file locations
-- **Improved Error Handling**: Better error messages and exception handling
-- **Documentation Updates**: Comprehensive technical documentation with diagrams
-
-## Components
-
-### 1. User Interface (`SplitterUI.java`)
-- **Main Window**: Fixed 600x600 pixel window with organized sections
-- **Header Section**: Title and navigation buttons (Help, About)
-- **File Selection**: GeoTIFF file chooser with extension filtering
-- **Settings Panel**: Comprehensive configuration options
-- **Status Display**: Detailed processing feedback
-- **Help & About**: Documentation and developer information
-
-### 2. GeoTIFF Processor (`GeoTiffProcessor.java`)
-- **File Processing**: Handles reading and processing of GeoTIFF files
-- **Coordinate Management**: Manages coordinate transformations and CRS
-- **Tile Generation**: Implements tile generation with format selection
-- **Format Support**: 
-  * GeoTIFF output with preserved georeferencing
-  * PNG output with transparency support
-  * KMZ overlay generation
-- **Quality Settings**: High-quality image processing with antialiasing
-
-## Dependencies
-
-### Core Libraries
-```xml
-<dependencies>
-    <!-- JavaFX - UI Framework -->
-    <dependency>
-        <groupId>org.openjfx</groupId>
-        <artifactId>javafx-controls</artifactId>
-        <version>17.0.1</version>
-    </dependency>
-
-    <!-- GeoTools - Geospatial Data Handling -->
-    <dependency>
-        <groupId>org.geotools</groupId>
-        <artifactId>gt-main</artifactId>
-        <version>27.0</version>
-    </dependency>
-    <dependency>
-        <groupId>org.geotools</groupId>
-        <artifactId>gt-geotiff</artifactId>
-        <version>27.0</version>
-    </dependency>
-</dependencies>
-```
-
-## Processing Pipeline
-
-### 1. File Loading and Validation
-```java
-public void process() throws IOException {
-    // Initialize EPSG database
-    System.setProperty("org.geotools.referencing.forceXY", "true");
-    
-    // Reset CRS factory and create reader
-    CRS.reset("all");
-    GeoTiffReader reader = new GeoTiffReader(geoTiffFile);
-    
-    // Extract essential information
-    coverage = reader.read(null);
-    bounds = coverage.getEnvelope2D();
-    sourceCRS = coverage.getCoordinateReferenceSystem();
-}
-```
-
-### 2. Tile Generation Process
-```java
-public List<TileInfo> splitIntoTiles(int numTilesX, int numTilesY, File outputDir, String outputFormat) {
-    // Calculate dimensions
-    int tileWidth = (int) Math.ceil((double) fullWidth / numTilesX);
-    int tileHeight = (int) Math.ceil((double) fullHeight / numTilesY);
-
-    // Process each tile
-    for (int y = 0; y < numTilesY; y++) {
-        for (int x = 0; x < numTilesX; x++) {
-            // Create and process tile
-            BufferedImage tileImage = createTile(x, y);
-            tileImage = applyOpacity(tileImage);
-
-            // Save in selected format
-            if (outputFormat.equalsIgnoreCase("PNG")) {
-                saveTileAsPNG(tile, tileFile);
-            } else {
-                saveTileAsGeoTIFF(tile, tileFile);
-            }
-        }
-    }
-}
-```
-
-### 3. Format-Specific Processing
-
-#### GeoTIFF Output
-```java
-private void saveTileAsGeoTIFF(TileInfo tile, File outputFile) {
-    // Create grid coverage with georeferencing
-    GridCoverage2D tileCoverage = createGridCoverage(tile);
-    
-    // Write GeoTIFF with preserved coordinates
-    GeoTiffWriter writer = new GeoTiffWriter(outputFile);
-    writer.write(tileCoverage, null);
-}
-```
-
-#### PNG Output
-```java
-private void saveTileAsPNG(TileInfo tile, File outputFile) {
-    // Create high-quality PNG with alpha support
-    BufferedImage pngImage = new BufferedImage(
-        tile.getImage().getWidth(),
-        tile.getImage().getHeight(),
-        BufferedImage.TYPE_INT_ARGB
-    );
-    
-    // Apply high-quality rendering settings
-    Graphics2D g = pngImage.createGraphics();
-    g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, 
-                       RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-    g.setRenderingHint(RenderingHints.KEY_RENDERING, 
-                       RenderingHints.VALUE_RENDER_QUALITY);
-    g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, 
-                       RenderingHints.VALUE_ANTIALIAS_ON);
-    
-    // Save PNG with transparency
-    ImageIO.write(pngImage, "PNG", outputFile);
-}
-```
-
-## Output Formats
-
-### 1. GeoTIFF Tiles
-- Maintains coordinate reference system
-- Preserves geographic metadata
-- Suitable for GIS applications
-- Full quality preservation
-- Ideal for further GIS processing
-
-### 2. PNG Tiles
-- Lightweight image format
-- Full transparency support
-- High-quality rendering
-- Bilinear interpolation
-- Anti-aliasing enabled
-- Web-friendly format
-- Reduced file size
-- Suitable for web mapping
-
-### 3. KMZ Overlay
-- Google Earth compatible
-- Contains all tiles properly positioned
-- Includes transparency settings
-- Preserves geographic coordinates
-- Easy to share and view
-- Automatic tile organization
-
-## Best Practices
-
-### 1. Input Files
-- Use properly georeferenced GeoTIFF files
-- Ensure input file has valid CRS information
-- Verify file permissions
-- Check file size and memory availability
-
-### 2. Output Selection
-- Choose GeoTIFF for preserving geographic data
-- Use PNG for web applications or when transparency is needed
-- Enable KMZ generation for Google Earth visualization
-- Consider file size requirements
-
-### 3. Performance Optimization
-- Balance tile numbers with system memory
-- Consider output format based on use case
-- Use appropriate CRS for your region
-- Monitor processing resources
-
-### 4. Quality Settings
-- Adjust opacity as needed (0-100%)
-- Use antialiasing for better visual quality
-- Enable high-quality rendering for important outputs
-- Verify output quality before large batch processing
-
-## Technical Details
-
-### 1. Image Processing
-- Bilinear interpolation for smooth scaling
-- Alpha channel support for transparency
-- High-quality rendering pipeline
-- Memory-efficient tile processing
-
-### 2. Geographic Handling
-- Precise coordinate transformation
-- CRS preservation and conversion
-- Accurate boundary calculations
-- Proper georeferencing in outputs
-
-### 3. Error Handling
-- Comprehensive input validation
-- Detailed error messages
-- Graceful failure handling
-- User-friendly status updates
-
-## Application Architecture and Diagrams
-
-### System Flow Chart
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#32CD32', 'edgeLabelBackground':'#FFFFFF', 'tertiaryColor': '#fff0f0'}}}%%
-flowchart TD
-    style Start fill:#32CD32,stroke:#006400,stroke-width:2px
-    style Complete fill:#32CD32,stroke:#006400,stroke-width:2px
-    style ShowError fill:#FF6B6B,stroke:#CC0000,stroke-width:2px
-    style KMZOption fill:#FFD700,stroke:#B8860B,stroke-width:2px
-
-    Start([🚀 Start]) --> InputFile[/📂 Select GeoTIFF File/]
-    InputFile --> ValidateFile{Valid File?}
-    ValidateFile -->|No| ShowError[❌ Show Error]
-    ShowError --> InputFile
-    ValidateFile -->|Yes| ConfigureSettings[⚙️ Configure Settings]
-    ConfigureSettings --> ProcessSettings[/Process Settings/]
-    ProcessSettings --> SplitImage[🔄 Split Image]
-    SplitImage --> SaveTiles[💾 Save Tiles]
-    SaveTiles --> KMZOption{Create KMZ?}
-    KMZOption -->|Yes| CreateKMZ[📦 Generate KMZ]
-    KMZOption -->|No| Complete
-    CreateKMZ --> Complete([✅ Complete])
-
-    classDef default fill:#f9f9f9,stroke:#333,stroke-width:2px;
-    classDef process fill:#BBE5F3,stroke:#0099CC,stroke-width:2px;
-    classDef decision fill:#FFE5CC,stroke:#FF9933,stroke-width:2px;
-    
-    class InputFile,ProcessSettings,SplitImage,SaveTiles,CreateKMZ process;
-    class ValidateFile,KMZOption decision;
-```
-
-### Data Flow Diagram (Level 0)
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#3498db', 'lineColor': '#2ecc71'}}}%%
-flowchart LR
-    subgraph User Operations
-        User((👤 User))
-    end
-    
-    subgraph Core Process
-        Process[GeoTIFF Splitter]
-    end
-    
-    User -->|📂 Input GeoTIFF| Process
-    Process -->|🗂️ Tiles| User
-    Process -->|📦 KMZ Overlay| User
-    Process -->|📊 Status| User
-    User -->|⚙️ Settings| Process
-
-    style Process fill:#3498db,stroke:#2980b9,stroke-width:2px
-    style User fill:#e74c3c,stroke:#c0392b,stroke-width:2px
-```
-
-### Component Architecture
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#9b59b6', 'secondaryColor': '#1abc9c'}}}%%
 graph TB
-    subgraph UI Layer
-        UI[User Interface]
-        Settings[Settings Panel]
-        Progress[Progress Monitor]
+    subgraph "Presentation Layer"
+        UI[JavaFX UI]
+        Events[Event Handlers]
     end
-
-    subgraph Processing Layer
-        Processor[GeoTIFF Processor]
-        TileManager[Tile Manager]
-        KMZBuilder[KMZ Builder]
+    
+    subgraph "Business Layer"
+        Processor[Image Processor]
+        Coordinator[Process Coordinator]
+        Validator[Input Validator]
     end
-
-    subgraph Data Layer
+    
+    subgraph "Data Layer"
         FileSystem[File System]
-        Cache[Memory Cache]
+        GeoTools[GeoTools Library]
     end
-
-    UI --> Settings
-    UI --> Progress
-    Settings --> Processor
-    Processor --> TileManager
-    TileManager --> KMZBuilder
+    
+    UI --> Events
+    Events --> Coordinator
+    Coordinator --> Processor
+    Coordinator --> Validator
     Processor --> FileSystem
-    TileManager --> Cache
-    KMZBuilder --> FileSystem
-
-    classDef uiLayer fill:#9b59b6,stroke:#8e44ad,color:white;
-    classDef processLayer fill:#1abc9c,stroke:#16a085,color:white;
-    classDef dataLayer fill:#e67e22,stroke:#d35400,color:white;
-
-    class UI,Settings,Progress uiLayer;
-    class Processor,TileManager,KMZBuilder processLayer;
-    class FileSystem,Cache dataLayer;
+    Processor --> GeoTools
 ```
 
-### Sequence Diagram
+### Detailed Data Flow Diagram (DFD)
+
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#3498db', 'secondaryColor': '#2ecc71', 'tertiaryColor': '#e74c3c'}}}%%
+graph TD
+    User((User)) --> |Select File| Input[File Input]
+    Input --> |Validate| Format{Format Check}
+    Format --> |GeoTIFF| GT[GeoTIFF Processing]
+    Format --> |JPEG/JP2| JP[JPEG Processing]
+    
+    GT --> |Extract| Coords[Coordinate Extraction]
+    JP --> |Manual Input| ManualCoords[Manual Coordinates]
+    
+    Coords --> Validation{Validation}
+    ManualCoords --> Validation
+    
+    Validation --> |Valid| TileProcess[Tile Processing]
+    Validation --> |Invalid| Error[Error Handling]
+    
+    TileProcess --> |Generate| Tiles[Tile Generation]
+    Tiles --> |Create| Output[Output Files]
+    
+    Output --> |GeoTIFF| GTOut[GeoTIFF Tiles]
+    Output --> |PNG| PNGOut[PNG Tiles]
+    Output --> |KMZ| KMZOut[KMZ Overlay]
+```
+
+### Component Interaction Diagram
+
+```mermaid
 sequenceDiagram
-    participant U as 👤 User
-    participant UI as 🖥️ UI
-    participant P as ⚙️ Processor
-    participant T as 🗂️ TileManager
-    participant F as 💾 FileSystem
-
-    rect rgb(240, 248, 255)
-        Note over U,F: File Selection Phase
-        U->>+UI: Select GeoTIFF
-        UI->>+P: Initialize
-        P->>+F: Read File
-        F-->>-P: File Data
-        P-->>-UI: Ready
-        UI-->>-U: Show Settings
-    end
-
-    rect rgb(255, 248, 240)
-        Note over U,F: Processing Phase
-        U->>+UI: Configure Settings
-        UI->>+P: Process File
-        P->>+T: Generate Tiles
-        T->>F: Save Tiles
-        T-->>-P: Tiles Created
-        
-        opt Create KMZ
-            P->>P: Generate KML
-            P->>F: Create KMZ
-        end
-        
-        P-->>-UI: Complete
-        UI-->>-U: Show Results
+    participant User
+    participant UI
+    participant Validator
+    participant Processor
+    participant FileSystem
+    
+    User->>UI: Select File
+    UI->>Validator: Validate Input
+    Validator-->>UI: Validation Result
+    
+    alt Valid Input
+        UI->>Processor: Process File
+        Processor->>FileSystem: Read File
+        FileSystem-->>Processor: File Data
+        Processor->>Processor: Process Data
+        Processor->>FileSystem: Write Tiles
+        FileSystem-->>Processor: Write Complete
+        Processor-->>UI: Process Complete
+        UI-->>User: Show Success
+    else Invalid Input
+        UI-->>User: Show Error
     end
 ```
 
 ### Class Relationship Diagram
+
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2ecc71', 'secondaryColor': '#3498db'}}}%%
 classDiagram
-    direction TB
-    
     class SplitterUI {
-        <<GUI Controller>>
         -File selectedFile
-        -Settings settings
-        -ProcessorManager manager
-        +initialize()
-        +handleFileSelection()
+        -ProcessController controller
+        +start()
         +processFile()
     }
-
-    class Settings {
-        <<Configuration>>
-        -int tilesX
-        -int tilesY
-        -String outputFormat
-        -float opacity
-        -boolean createKMZ
-        +validate()
-        +apply()
-    }
-
-    class ProcessorManager {
-        <<Service>>
-        -GeoTiffProcessor processor
-        -TileManager tileManager
-        -KMZBuilder kmzBuilder
-        +process()
-        +createOutput()
-    }
-
-    class GeoTiffProcessor {
-        <<Core>>
-        -GridCoverage2D coverage
-        -CoordinateReferenceSystem crs
-        +splitTiles()
-        +transformCoordinates()
-    }
-
-    class TileManager {
-        <<Core>>
-        -List~TileInfo~ tiles
-        +generateTiles()
-        +saveTiles()
-    }
-
-    class KMZBuilder {
-        <<Utility>>
-        +createKML()
-        +packageKMZ()
-    }
-
-    SplitterUI --> Settings
-    SplitterUI --> ProcessorManager
-    ProcessorManager --> GeoTiffProcessor
-    ProcessorManager --> TileManager
-    ProcessorManager --> KMZBuilder
-    GeoTiffProcessor --> TileManager
-
-    class SplitterUI {
-        backgroundColor:#2ecc71
-    }
-    class Settings {
-        backgroundColor:#3498db
-    }
-    class ProcessorManager {
-        backgroundColor:#e74c3c
-    }
-```
-
-### Data Structure (ER)
-```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#9b59b6', 'secondaryColor': '#1abc9c'}}}%%
-erDiagram
-    GeoTIFF ||--o{ Tile : contains
-    Tile ||--o{ Metadata : has
-    Tile ||--o{ Image : has
-    KMZ ||--o{ Tile : contains
-    KMZ ||--o{ KML : contains
     
-    GeoTIFF {
-        string filename PK
-        string crs FK
-        int width
-        int height
-        geometry bounds
-        timestamp created_at
+    class ProcessController {
+        -ImageProcessor processor
+        -ValidationService validator
+        +coordinate()
+        +process()
     }
-
-    Tile {
-        int id PK
-        int x
-        int y
-        int width
-        int height
-        geometry bounds
-        float opacity
+    
+    class ImageProcessor {
+        -File inputFile
+        -TileGenerator tileGen
+        +process()
+        +createTiles()
     }
-
-    Metadata {
-        int tile_id FK
-        string crs
-        double north
-        double south
-        double east
-        double west
-        json properties
+    
+    class ValidationService {
+        +validateInput()
+        +validateCoordinates()
     }
-
-    Image {
-        int tile_id FK
-        blob data
-        string format
-        int width
-        int height
-        float opacity
+    
+    class TileGenerator {
+        +generateTiles()
+        +createKMZ()
     }
-
-    KML {
-        string id PK
-        string version
-        string description
-        timestamp created_at
-        array overlays
-    }
-
-    style GeoTIFF fill:#9b59b6,stroke:#8e44ad,color:white
-    style Tile fill:#1abc9c,stroke:#16a085,color:white
-    style Metadata fill:#e67e22,stroke:#d35400,color:white
-    style Image fill:#3498db,stroke:#2980b9,color:white
-    style KML fill:#e74c3c,stroke:#c0392b,color:white
+    
+    SplitterUI --> ProcessController
+    ProcessController --> ImageProcessor
+    ProcessController --> ValidationService
+    ImageProcessor --> TileGenerator
 ```
 
-### Processing Pipeline
+### State Diagram
+
 ```mermaid
-%%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#2ecc71', 'secondaryColor': '#3498db', 'tertiaryColor': '#e74c3c'}}}%%
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> FileSelected: Select File
+    FileSelected --> Configuring: Valid File
+    FileSelected --> Error: Invalid File
+    Configuring --> Processing: Start Process
+    Processing --> Cancelled: Cancel
+    Processing --> Completed: Success
+    Processing --> Error: Failure
+    Cancelled --> Idle
+    Completed --> Idle
+    Error --> Idle
+```
+
+### Process Flow Diagram
+
+```mermaid
 graph LR
     subgraph Input
-        A[📂 GeoTIFF Input] --> B[🔍 Validate]
+        A[File Selection] --> B[Format Detection]
+        B --> C{Format Type}
     end
     
     subgraph Processing
-        B --> C{⚙️ Process}
-        C --> D[✂️ Split Tiles]
-        D --> E[💾 Save]
+        C -->|GeoTIFF| D[Extract Coords]
+        C -->|JPEG/JP2| E[Manual Coords]
+        D --> F[Validation]
+        E --> F
+        F --> G[Tile Processing]
     end
     
     subgraph Output
-        E --> F{📤 Format}
-        F -->|GeoTIFF| G[🗺️ GeoTIFF Tiles]
-        F -->|PNG| H[🖼️ PNG Tiles]
-        G & H --> I{📦 KMZ?}
-        I -->|Yes| J[📄 Generate KML]
-        J --> K[🎁 Package KMZ]
-        I -->|No| L[✅ Complete]
-        K --> L
+        G --> H[Generate Tiles]
+        H --> I[Create KMZ]
+        H --> J[Save Tiles]
     end
-
-    classDef input fill:#2ecc71,stroke:#27ae60,color:white;
-    classDef process fill:#3498db,stroke:#2980b9,color:white;
-    classDef output fill:#e74c3c,stroke:#c0392b,color:white;
-    classDef decision fill:#f1c40f,stroke:#f39c12,color:black;
-
-    class A,B input;
-    class C,D,E process;
-    class G,H,J,K,L output;
-    class F,I decision;
 ```
 
-These enhanced diagrams feature:
-- Consistent color schemes
-- Icons and emojis for better visualization
-- Clear grouping and subgraphs
-- Improved typography and styling
-- Better visual hierarchy
-- Detailed relationships and flows
-- Professional-looking design elements
+## Features
 
-The diagrams use Mermaid's advanced features:
-- Theme initialization
-- Custom styling
-- Direction controls
-- Subgraphs
-- Icons and emojis
-- Color schemes
-- Advanced layouts
+### 1. File Processing Capabilities
+- Support for multiple image formats:
+  - GeoTIFF (.tif, .tiff)
+  - JPEG2000 (.jp2, .j2k)
+  - JPEG (.jpg, .jpeg)
+- Intelligent file handling with directory memory
+- Default paths to user-friendly locations
+- Automatic output directory creation
+- Enhanced file format validation
+- Improved error handling for file operations
 
-Each diagram is now more visually appealing and easier to understand while maintaining its technical accuracy. 
+### 2. Smart Coordinate Handling
+- Automatic calculation of MAX coordinates
+- Real-time coordinate suggestions
+  - Adds ~1km offset (0.25 degrees) automatically
+  - Updates MAX values when MIN values change
+- Manual override capability for all coordinates
+- Comprehensive coordinate validation
+  - Ensures valid number inputs
+  - Verifies MAX values are greater than MIN values
+  - Real-time validation feedback
+- Special handling for non-georeferenced formats
+- Improved error messages for invalid inputs
 
-## Developer Information
+### 3. Tile Processing
+- Configurable tile dimensions (X and Y)
+- Multiple output formats:
+  - GeoTIFF Tiles
+  - PNG Tiles
+- Compression options:
+  - LZW
+  - DEFLATE
+  - NONE
+- Adjustable tile opacity with precise +/- controls
+- Enhanced progress monitoring
+- Improved error handling during processing
 
-- **Developer**: Angel (Mehul) Singh
-- **Email**: angelsingh2199@gmail.com
-- **Company**: BR31 - Technologies Pvt. Ltd.
-- **Website**: https://br31tech.com
-- **LinkedIn**: https://linkedin.com/in/angel3002
+### 4. Process Control
+- Real-time progress monitoring
+- Enhanced cancel capability for long-running operations
+- Detailed status feedback
+- Background processing with UI updates
+- Proper thread management
+- Safe process termination
+- Improved error recovery
 
-## Support and Updates
+### 5. User Interface
+- Modern, responsive design
+- Dynamic window sizing
+- Centered control buttons
+- Improved opacity control with +/- buttons
+- Enhanced status indicators
+- Dedicated cancel button
+- Removed scrollbars for better UX
+- Better visual feedback during operations
 
-The application is actively maintained and supported. For issues, feature requests, or contributions:
-1. Contact developer via email
-2. Visit the company website
-3. Create issues on the GitHub repository
-4. Check for regular updates
+### 6. Coordinate Systems Support
+- Multiple CRS options:
+  - WGS 84 (EPSG:4326)
+  - Web Mercator (EPSG:3857)
+  - UTM zones (32643-32646)
+- Custom CRS support
+- Automatic CRS validation
+- Improved error handling for CRS operations
 
-This documentation provides a comprehensive overview of the application's capabilities, recent improvements, and technical details. For specific questions or support, please contact the development team. 
+## How to Use
+
+### 1. File Selection
+1. Click 'Select File' button
+2. Navigate to your image directory (remembers last used location)
+3. Choose your input file from supported formats
+4. Application automatically selects appropriate handling based on format
+
+### 2. Configure Settings
+1. Set number of tiles (X and Y)
+2. Choose target coordinate system
+3. Adjust tile opacity using + and - buttons
+4. Select output format
+5. Choose compression method
+6. Verify all settings before processing
+
+### 3. Coordinate Input
+- For GeoTIFF files:
+  1. Coordinates are automatically extracted
+  2. Manual override available if needed
+  3. Validation ensures coordinate integrity
+
+- For JPEG/JP2 files:
+  1. Check 'Manual Georeferencing' box
+  2. Enter MIN X (West) coordinate
+  3. Enter MIN Y (South) coordinate
+  4. MAX coordinates will be automatically suggested
+  5. Adjust MAX values if needed
+  6. Real-time validation ensures accuracy
+
+### 4. Processing
+1. Click 'Process' button to start
+2. Monitor progress in status area
+3. Use 'Cancel' button if needed
+4. Wait for completion message
+5. Check status messages for any warnings or errors
+
+### 5. Output Files
+- Individual tiles: Created in 'output/tiles/' directory
+- KMZ file (if selected): Choose save location
+- All outputs preserve geographic accuracy
+- Automatic output directory management
+
+## Tips and Best Practices
+
+1. **File Selection**
+   - The application remembers your last used directory
+   - Default location is set to Documents folder
+   - Falls back to home directory if Documents unavailable
+   - Verify file format compatibility before processing
+
+2. **Coordinate Handling**
+   - Let the application calculate MAX coordinates when possible
+   - The automatic 1km offset is suitable for most use cases
+   - Always verify suggested coordinates for critical applications
+   - Use manual override when precise coordinates are required
+
+3. **Processing**
+   - Larger tile numbers create smaller individual tiles
+   - Monitor status messages for progress
+   - Use cancel button for safe process termination
+   - Wait for completion before closing the application
+   - Check error messages if processing fails
+
+4. **Output**
+   - Check output directory for all generated files
+   - Use KMZ format for Google Earth compatibility
+   - Verify coordinate accuracy in output files
+   - Ensure sufficient disk space before processing
+
+## Technical Requirements
+
+- Java Runtime Environment (JRE) 8 or higher
+- Minimum 4GB RAM recommended
+- Sufficient disk space for output files
+- Operating System:
+  - Windows 7 or higher
+  - macOS 10.10 or higher
+  - Linux (major distributions)
+
+## Support
+
+For technical support or feature requests:
+- Email: angelsingh2199@gmail.com
+- Website: https://br31tech.com
+- LinkedIn: https://linkedin.com/in/angel3002
+
+## Version History
+
+### Version 1.1.0 (Latest)
+- Added smart coordinate calculation
+- Improved UI responsiveness
+- Enhanced process control
+- Added cancel functionality
+- Improved error handling
+- Added directory memory feature
+- Enhanced help documentation
+
+### Version 1.0.0
+- Initial release with core functionality
+- Basic coordinate handling
+- Multiple format support
+- Simple process control
+- Basic UI implementation 
+
+## Technical Implementation Details
+
+### File Processing Pipeline
+
+```mermaid
+graph TD
+    subgraph Input Processing
+        A[File Input] --> B[Format Detection]
+        B --> C[Metadata Extraction]
+    end
+    
+    subgraph Coordinate Processing
+        C --> D[Coordinate System]
+        D --> E[Bounds Calculation]
+        E --> F[Tile Coordinates]
+    end
+    
+    subgraph Image Processing
+        F --> G[Image Loading]
+        G --> H[Tile Generation]
+        H --> I[Format Conversion]
+    end
+    
+    subgraph Output Generation
+        I --> J[Tile Export]
+        J --> K[KMZ Creation]
+        K --> L[Final Output]
+    end
+```
+
+### Error Handling Flow
+
+```mermaid
+graph TD
+    A[Error Detected] --> B{Error Type}
+    B -->|File| C[File Error Handler]
+    B -->|Coordinate| D[Coordinate Error Handler]
+    B -->|Processing| E[Process Error Handler]
+    
+    C --> F[File Recovery]
+    D --> G[Coordinate Validation]
+    E --> H[Process Recovery]
+    
+    F --> I[User Notification]
+    G --> I
+    H --> I
+``` 

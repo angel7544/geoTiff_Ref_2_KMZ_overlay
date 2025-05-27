@@ -656,7 +656,7 @@ public class SplitterUI extends Application {
 
         // Application info
         grid.add(new Label("Version:"), 0, 5);
-        grid.add(new Label("1.0.0"), 1, 5);
+        grid.add(new Label("3.0.0"), 1, 5);
 
         grid.add(new Label("Support:"), 0, 6);
         TextArea supportInfo = new TextArea(
