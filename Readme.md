@@ -2,81 +2,81 @@
 
 A powerful Java-based application for processing and converting large georeferenced images into manageable tiles with KMZ overlay support. Perfect for GIS professionals and researchers working with large-scale geographic data.
 
-## ✨ Latest Features (v1.1.0)
+## Latest Features (v1.1.0)
 
-### 🎯 Smart Coordinate Handling
-- 🔄 Automatic MAX coordinate calculation
-- 📍 Real-time coordinate suggestions with ~1km offset
-- ⚡ Dynamic updates as you type
-- ✅ Comprehensive validation
+### Smart Coordinate Handling
+- Automatic MAX coordinate calculation
+- Real-time coordinate suggestions with ~1km offset
+- Dynamic updates as you type
+- Comprehensive validation
 
-### 🎨 Enhanced UI
-- 🖥️ Modern, responsive design
-- ➕ Precise opacity control with +/- buttons
-- ⛔ Dedicated cancel button
-- 📊 Better progress indicators
+### Enhanced UI
+- Modern, responsive design
+- Precise opacity control with +/- buttons
+- Dedicated cancel button
+- Better progress indicators
 
-### ⚙️ Improved Processing
-- 🔄 Background processing with UI updates
-- 🛑 Safe process cancellation
-- 📝 Detailed status feedback
-- 🛡️ Enhanced error handling
+### Improved Processing
+- Background processing with UI updates
+- Safe process cancellation
+- Detailed status feedback
+- Enhanced error handling
 
-### 📂 File Management
-- 📁 Directory memory feature
-- 📍 Smart default paths
-- 🔍 Enhanced format validation
-- 📦 Automatic output organization
+### File Management
+- Directory memory feature
+- Smart default paths
+- Enhanced format validation
+- Automatic output organization
 
-## 🚀 Core Features
+## Core Features
 
-### 📄 Input Support
-- 📑 GeoTIFF (.tif, .tiff)
+### Input Support
+- GeoTIFF (.tif, .tiff)
   - Support for .aux.xml files for proper georeferencing
   - Automatic coordinate extraction
-- 🖼️ JPEG2000 (.jp2, .j2k)
+- JPEG2000 (.jp2, .j2k)
   - Manual coordinate input support
   - Automatic validation
-- 🎨 JPEG (.jpg, jpeg)
+- JPEG (.jpg, jpeg)
   - Manual georeferencing support
   - Real-time coordinate validation
 
-### ⚙️ Processing Options
-- 🧩 Configurable tile dimensions (X and Y)
-- 🌐 Multiple CRS support
+### Processing Options
+- Configurable tile dimensions (X and Y)
+- Multiple CRS support
   - WGS 84 (EPSG:4326)
   - Web Mercator (EPSG:3857)
   - UTM zones (32643-32646)
   - Custom CRS support
-- 🔧 Compression options
+- Compression options
   - LZW
   - DEFLATE
   - None
-- 🎚️ Adjustable opacity with precise controls
+- Adjustable opacity with precise controls
 
-### 📤 Output Formats
-- 🗺️ GeoTIFF Tiles with preserved coordinates
-- 🖼️ PNG Tiles for web compatibility
-- 🌍 KMZ Overlays for Google Earth
+### Output Formats
+- GeoTIFF Tiles with preserved coordinates
+- PNG Tiles for web compatibility
+- KMZ Overlays for Google Earth
 
-## 🚀 Quick Start
+## Quick Start
 
-### 💻 Requirements
-- ☕ Java 17 or higher
-- 💾 4GB RAM minimum
-- 🖥️ Operating Systems:
+### Requirements
+- Java 17 or higher
+- 4GB RAM minimum
+- Operating Systems:
   - Windows 7 or higher
   - macOS 10.10 or higher
   - Linux (major distributions)
 
-### 📥 Installation
+### Installation
 1. Download the latest release
 2. Double-click the JAR file or run:
    ```bash
    java -jar geosplit2kmz.jar
    ```
 
-### 🔰 Basic Usage
+### Basic Usage
 1. Click 'Select File' to choose your input
    - Supports GeoTIFF, JPEG2000, and JPEG formats
    - Remembers last used directory
@@ -98,7 +98,7 @@ A powerful Java-based application for processing and converting large georeferen
    - KMZ files (if selected)
    - Maintains original georeferencing
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 GeoImage-Split-2KMZ/
@@ -121,61 +121,61 @@ GeoImage-Split-2KMZ/
     └── documentation.md
 ```
 
-## 💡 Tips & Best Practices
+## Tips & Best Practices
 
-### 📂 File Selection
+### File Selection
 - Use GeoTIFF for best coordinate accuracy
 - Include .aux.xml for enhanced georeferencing
 - Keep input files in easily accessible locations
 
-### 🎯 Coordinate Handling
+### Coordinate Handling
 - Let the app calculate MAX coordinates when possible
 - The 1km offset (0.25 degrees) suits most cases
 - Verify coordinates for critical applications
 - Use manual override for precise control
 
-### ⚙️ Processing
+### Processing
 - Larger tile numbers create smaller tiles
 - Monitor status messages for progress
 - Use cancel button for safe termination
 - Wait for completion before closing
 
-### 📤 Output
+### Output
 - Check output directory for all files
 - Use KMZ format for Google Earth
 - Verify coordinate accuracy in outputs
 - Ensure sufficient disk space
 
-## 🤝 Support & Contact
+## Support & Contact
 
-### 📞 Technical Support
-- 📧 Email: angelsingh2199@gmail.com
-- 🌐 Website: https://br31tech.com
-- 💼 LinkedIn: https://linkedin.com/in/angel3002
+### Technical Support
+- Email: angelsingh2199@gmail.com
+- Website: https://br31tech.com
+- LinkedIn: https://linkedin.com/in/angel3002
 
-### 📚 Documentation
-- 📖 Full documentation available in `documentation.md`
-- 💻 Source code comments for developers
-- 🔄 Regular updates and improvements
+### Documentation
+- Full documentation available in `documentation.md`
+- Source code comments for developers
+- Regular updates and improvements
 
-## 📝 Version History
+## Version History
 
 ### v1.1.0 (Latest)
-- ✨ Added smart coordinate calculation
-- 🎨 Improved UI responsiveness
-- ⚙️ Enhanced process control
-- 🛑 Added cancel functionality
-- 📂 Added directory memory
-- 🛡️ Improved error handling
+- Added smart coordinate calculation
+- Improved UI responsiveness
+- Enhanced process control
+- Added cancel functionality
+- Added directory memory
+- Improved error handling
 
 ### v1.0.0
-- 🚀 Initial release
-- 📍 Basic coordinate handling
-- 📄 Multiple format support
-- ⚙️ Simple process control
+- Initial release
+- Basic coordinate handling
+- Multiple format support
+- Simple process control
 
 ---
-Made with ❤️ by Angel (Mehul) Singh
+Made with love by Angel (Mehul) Singh
 
 # KMZ Image Splitter and Rebuilder (GeoTile-KMZ)
 
@@ -187,21 +187,17 @@ A Java-based utility to process georeferenced KMZ files:
 
 This tool automates coordinate calculation for each tile based on the original KMZ file's bounding box.
 
----
+## Key Features
 
-## 🌍 Key Features
+- Extracts KMZ (ZIP) and reads `KML` file
+- Parses `<GroundOverlay>` and `<LatLonBox>` to get geospatial bounds
+- Splits the image into tiles (configurable size)
+- Automatically calculates georeferenced bounds per tile
+- Creates individual KML files for each tile
+- Packs each tile+KML into a KMZ
+- (Coming Soon) Optionally merge tiles into a single KMZ with multiple overlays
 
-- ✅ Extracts KMZ (ZIP) and reads `KML` file
-- ✅ Parses `<GroundOverlay>` and `<LatLonBox>` to get geospatial bounds
-- ✅ Splits the image into tiles (configurable size)
-- ✅ Automatically calculates georeferenced bounds per tile
-- ✅ Creates individual KML files for each tile
-- ✅ Packs each tile+KML into a KMZ
-- 🔄 (Coming Soon) Optionally merge tiles into a single KMZ with multiple overlays
-
----
-
-## 🗂️ Project Structure
+## Project Structure
 
 KMZ_GeoTileSplitter-Merger/
 ├── input/
@@ -221,10 +217,7 @@ KMZ_GeoTileSplitter-Merger/
 │ └── Utils.java # General file/image utils
 └── README.md
 
-
----
-
-## ⚙️ Configuration
+## Configuration
 
 Update these variables inside `Main.java` or `config.properties`:
 - `tileWidth` – Width of each tile in pixels (e.g. `512`)
@@ -232,43 +225,35 @@ Update these variables inside `Main.java` or `config.properties`:
 - `inputKMZPath` – Path to input `.kmz` file
 - `imageFormat` – `png` or `jpg`
 
----
-add option for selecting tif.aux.xml for tiff file for proper geo refrencing
-## 🚀 How to Run
+## How to Run
 
-### 🛠️ Prerequisites
+### Prerequisites
 - Java 11+
 - Apache Maven (optional, if you modularize later)
 - Basic Java IDE or command line
 
-### ▶️ Steps
+### Steps
 1. Place your input KMZ file in the `input/` folder
 2. Compile and run `Main.java`
 3. Check the `output/tiles/` and `output/kmz/` directories
 
----
-
-## 📌 Notes
+## Notes
 
 - Only works with KMZ files that contain **1 image overlay**
 - Image is assumed to be georeferenced using `<LatLonBox>` in KML
 - Does not currently support KMZs with multiple overlays or 3D models
 
----
-
-## 🔧 Future Improvements
+## Future Improvements
 
 - Add merged KMZ generator with multiple `<GroundOverlay>` entries
 - GUI for selecting tile size and previewing output
 - Support for KML with rotation or 3D models
 
----
-
-## 🧑‍💻 Author
+## Author
 Angel Singh (Mehul)
-Made with ❤️ using Java.  
-#   g e o T i f f _ R e f _ 2 _ K M Z _ o v e r l a y 
- 
- #   g e o T i f f _ R e f _ 2 _ K M Z _ o v e r l a y 
- 
- 
+Made with love using Java.
+
+# ggeoTiff_Ref_2_KMZ_overlay
+
+# ggeoTiff_Ref_2_KMZ_overlay
+
